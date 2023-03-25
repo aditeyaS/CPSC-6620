@@ -97,7 +97,7 @@ CREATE TABLE pizza (
 CREATE TABLE pizza_topping (
     PizzaToppingPizzaID INTEGER NOT NULL,
     PizzaToppingToppingID INTEGER NOT NULL,
-    PizzaToppingCount INTEGER NOT NULL,
+    PizzaToppingCount INTEGER NOT NULL DEFAULT 1,
     PRIMARY KEY(PizzaToppingPizzaID, PizzaToppingToppingID),
     FOREIGN KEY(PizzaToppingPizzaID) REFERENCES pizza(PizzaID),
     FOREIGN KEY(PizzaToppingToppingID) REFERENCES topping(ToppingID)

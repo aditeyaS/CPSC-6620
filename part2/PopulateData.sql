@@ -1,6 +1,10 @@
 -- https://github.com/aditeyaS/6620-project
 -- Aditeya Srivastava (aditeys@clemson.edu)
 
+INSERT INTO customer(CustomerFName, CustomerLName, CustomerPhone)
+VALUES
+('Dinein', 'Customer', '000-000-0000');
+
 INSERT INTO base(BaseSize, BaseCrust, BaseSP, BaseCP)
 VALUES
 ('small', 'Thin', 3, 0.5),
@@ -47,7 +51,3 @@ VALUES
 ('Lunch Special Large', 0, 2.00),
 ('Specialty Pizza', 0, 1.50),
 ('Gameday Special', 20, 0);
-
-INSERT INTO customer(CustomerFName, CustomerLName, CustomerPhone)
-VALUES
-('Dinein', 'Customer', '000-000-0000');

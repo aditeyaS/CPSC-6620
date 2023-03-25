@@ -19,7 +19,7 @@ DROP TABLE topping;
 
 DROP TABLE pizza;
 
-DROP TABLE order;
+DROP TABLE orders;
 
 DROP TABLE customer;
 
