@@ -1,9 +1,26 @@
 -- https://github.com/aditeyaS/6620-project
 -- Aditeya Srivastava (aditeys@clemson.edu)
 
--- Delete the base table
-DROP TABLE base;
+DROP TABLE dinein;
+
+DROP TABLE pickup;
+
+DROP TABLE delivery;
+
+DROP TABLE order_discount;
+
+DROP TABLE pizza_discount;
 
 DROP TABLE discount;
 
+DROP TABLE pizza_topping;
+
+DROP TABLE topping;
+
+DROP TABLE pizza;
+
+DROP TABLE order;
+
 DROP TABLE customer;
+
+DROP TABLE base;

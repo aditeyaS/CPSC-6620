@@ -1,7 +1,6 @@
 -- https://github.com/aditeyaS/6620-project
 -- Aditeya Srivastava (aditeys@clemson.edu)
 
--- Entering data in the base table
 INSERT INTO base(BaseSize, BaseCrust, BaseSP, BaseCP)
 VALUES
 ('small', 'Thin', 3, 0.5),
@@ -21,7 +20,6 @@ VALUES
 ('x-large', 'Pan', 11.5, 4.5),
 ('x-large', 'Gluten-Free', 12.5, 6);
 
--- Enetring data in the topping table
 INSERT INTO topping(ToppingName, ToppingSP, ToppingCP, ToppingCurrentInventory, ToppingAmtS, ToppingAmtM, ToppingAmtL, ToppingAmtXL)
 VALUES
 ('Pepperoni', 1.25, 0.2, 100, 2, 2.75, 3.5, 4.5),
@@ -42,14 +40,14 @@ VALUES
 ('Goat Cheese', 2, 0.2, 54, 1.6, 2.75, 4, 5.5),
 ('Bacon', 1.5, 0.25, 89, 1, 1.5, 2, 3);
 
-
 INSERT INTO discount(DiscountName, DiscountPercentage, DiscountAmount)
 VALUES
-('Employee', 15, NULL),
-('Lunch Special Medium', NULL, 1.00),
-('Lunch Special Large', NULL, 2.00),
-('Specialty Pizza', NULL, 1.50),
-('Gameday Special', 20, NULL);
+('Employee', 15, 0),
+('Lunch Special Medium', 0, 1.00),
+('Lunch Special Large', 0, 2.00),
+('Specialty Pizza', 0, 1.50),
+('Gameday Special', 20, 0);
 
-
-
+INSERT INTO customer(CustomerFName, CustomerLName, CustomerPhone)
+VALUES
+('Dinein', 'Customer', '000-000-0000');
