@@ -1,6 +1,10 @@
 -- https://github.com/aditeyaS/6620-project
 -- Aditeya Srivastava (aditeys@clemson.edu)
 
+CREATE SCHEMA proj_p2_g1;
+
+USE proj_p2_g1;
+
 CREATE TABLE base (
     BaseSize VARCHAR(20) NOT NULL,
     BaseCrust VARCHAR(20) NOT NULL,
@@ -15,6 +19,7 @@ CREATE TABLE topping (
     ToppingSP DECIMAL(3, 2) NOT NULL,
     ToppingCP DECIMAL(3, 2) NOT NULL,
     ToppingCurrentInventory DECIMAL(10,2) NOT NULL,
+    ToppingMinimumInventory DECIMAL(10, 2) NOT NULL DEFAULT 5,
     ToppingAmtS DECIMAL(3,2) NOT NULL,
     ToppingAmtM DECIMAL(3,2) NOT NULL,
     ToppingAmtL DECIMAL(3,2) NOT NULL,

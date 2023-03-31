@@ -1,6 +1,8 @@
 -- https://github.com/aditeyaS/6620-project
 -- Aditeya Srivastava (aditeys@clemson.edu)
 
+USE proj_p2_g1;
+
 INSERT INTO customer(CustomerFName, CustomerLName, CustomerPhone)
 VALUES
 ('Dinein', 'Customer', '000-000-0000');
