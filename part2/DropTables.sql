@@ -27,10 +27,10 @@ DROP TABLE customer;
 
 DROP TABLE base;
 
-DROP VIEW ToppingPopularity;
+DROP VIEW IF EXISTS ToppingPopularity;
 
-DROP VIEW ProfitByPizza;
+DROP VIEW IF EXISTS ProfitByPizza;
 
-DROP VIEW ProfitByOrderType;
+DROP VIEW IF EXISTS ProfitByOrderType;
 
-DROP SCHEMA proj_p2_g1;
+DROP SCHEMA IF EXISTS proj_p2_g1;
