@@ -1,5 +1,6 @@
 package cpsc4620;
 
+import javax.swing.*;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
@@ -34,8 +35,8 @@ public final class DBNinja {
 
 	public final static String size_s = "small";
 	public final static String size_m = "medium";
-	public final static String size_l = "Large";
-	public final static String size_xl = "XLarge";
+	public final static String size_l = "large";
+	public final static String size_xl = "x-large";
 
 	public final static String crust_thin = "Thin";
 	public final static String crust_orig = "Original";
@@ -67,10 +68,12 @@ public final class DBNinja {
 		 * adding the order to the order DB table, but we're also recording
 		 * the necessary data for the delivery, dinein, and pickup tables
 		 */
-	
+		Statement statement = conn.createStatement();
+
 
 		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 	}
 	
 	public static void addPizza(Pizza p) throws SQLException, IOException
@@ -82,12 +85,13 @@ public final class DBNinja {
 		 * instance of topping usage to that bridge table if you have't accounted
 		 * for that somewhere else.
 		 */
-		
+		Statement statement = conn.createStatement();
 		
 		
 		
 		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 	}
 	
 	public static int getMaxPizzaID() throws SQLException, IOException
@@ -98,13 +102,15 @@ public final class DBNinja {
 		 * It goes and fetches the largest PizzaID in the pizza table.
 		 * You wont need to implement this function if you didn't forget to do that
 		 */
-		
-		
-		
-		
-		
+		Statement statement = conn.createStatement();
+		String query = "SELECT MAX(PizzaID) FROM pizza;";
+		ResultSet resultSet = statement.executeQuery(query);
+		int maxPizzaId = -1;
+		if (resultSet.next())
+			maxPizzaId = resultSet.getInt(1);
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
-		return -1;
+		conn.close();
+		return maxPizzaId;
 	}
 	
 	public static void useTopping(Pizza p, Topping t, boolean isDoubled) throws SQLException, IOException //this function will update toppings inventory in SQL and add entities to the Pizzatops table. Pass in the p pizza that is using t topping
@@ -125,6 +131,7 @@ public final class DBNinja {
 		
 		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 	}
 	
 	
@@ -136,12 +143,11 @@ public final class DBNinja {
 		 * You might use this, you might not depending on where / how to want to update
 		 * this table
 		 */
-		
-		
-		
-		
-		
+		Statement statement = conn.createStatement();
+		String query = String.format("INSERT INTO pizza_discount VALUES(%d, %d);", p.getPizzaID(), d.getDiscountID());
+		statement.executeQuery(query);
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 	}
 	
 	public static void useOrderDiscount(Order o, Discount d) throws SQLException, IOException
@@ -152,12 +158,11 @@ public final class DBNinja {
 		 * You might use this, you might not depending on where / how to want to update
 		 * this table
 		 */
-		
-		
-		
-		
-		
+		Statement statement = conn.createStatement();
+		String query = String.format("INSERT INTO order_discount VALUES(%d, %d);", o.getOrderID(), d.getDiscountID());
+		statement.executeQuery(query);
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 	}
 	
 
@@ -168,12 +173,11 @@ public final class DBNinja {
 		/*
 		 * This should add a customer to the database
 		 */
-				
-		
-		
-		
-		
+		Statement statement = conn.createStatement();
+		String query = String.format("INSERT INTO customer VALUES('%s', '%s', '%s');", c.getFName(), c.getLName(), c.getPhone());
+		statement.executeQuery(query);
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 	}
 
 
@@ -184,7 +188,7 @@ public final class DBNinja {
 		 * add code to mark an order as complete in the DB. You may have a boolean field
 		 * for this, or maybe a completed time timestamp. However you have it.
 		 */
-		
+		Statement statement = conn.createStatement();
 
 
 		
@@ -193,6 +197,7 @@ public final class DBNinja {
 		
 		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 	}
 
 
@@ -203,14 +208,13 @@ public final class DBNinja {
 		/*
 		 * Adds toAdd amount of topping to topping t.
 		 */
+		Statement statement = conn.createStatement();
+		double newInventory = t.getCurINVT() + toAdd;
+		String query = String.format("UPDATE toppings SET __=%f WHERE toppingId=%d", newInventory, t.getTopID());
+		ResultSet resultSet = statement.executeQuery(query);
 
-
-		
-		
-		
-		
-		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 	}
 
 	
@@ -235,7 +239,8 @@ public final class DBNinja {
 		
 		
 		
-		//DO NOT FORGET TO CLOSE YOUR CONNECTION		
+		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 	}
 	
 	
@@ -246,16 +251,28 @@ public final class DBNinja {
 		 * should be returned in alphabetical order if you don't
 		 * plan on using a printInventory function
 		 */
-
-		
-
-		
-		
-		
-		
-		
+		ArrayList<Topping> toppingList = new ArrayList<Topping>();
+		Statement statement = conn.createStatement();
+		String query = "SELECT * FROM topping;";
+		ResultSet resultSet = statement.executeQuery(query);
+		while (resultSet.next()) {
+			int id = resultSet.getInt("ToppingID");
+			String name = resultSet.getString("ToppingName");
+			double cusPrice = resultSet.getDouble("ToppingSP");
+			double busPrice = resultSet.getDouble("ToppingCP");
+			int curI = (int)(resultSet.getDouble("ToppingCurrentInventory"));
+			int minI = (int)(resultSet.getDouble("ToppingMinimumInventory"));
+			double pAmt = resultSet.getDouble("ToppingAmtS");
+			double mAmt = resultSet.getDouble("ToppingAmtM");
+			double lAmt = resultSet.getDouble("ToppingAmtL");
+			double xlAmt = resultSet.getDouble("ToppingAmtXL");
+			Topping topping = new Topping(id, name, pAmt, mAmt, lAmt, xlAmt, cusPrice, busPrice, minI, curI);
+			toppingList.add(topping);
+		}
+		//TODO: Sort toppingList
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
-		return null;
+		conn.close();
+		return toppingList;
 	}
 
 
@@ -275,6 +292,7 @@ public final class DBNinja {
 
 		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 		return null;
 	}
 	
@@ -339,14 +357,13 @@ public final class DBNinja {
 		double bp = 0.0;
 		// add code to get the base price (for the customer) for that size and crust pizza Depending on how
 		// you store size & crust in your database, you may have to do a conversion
-		
-		
-		
-		
-		
-		
-		
+		Statement statement = conn.createStatement();
+		String query = String.format("SELECT BaseSP FROM base WHERE BaseSize = '%s' AND BaseCrust = '%s';", size, crust);
+		ResultSet resultSet = statement.executeQuery(query);
+		if (resultSet.next())
+			bp = resultSet.getDouble(1);
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 		return bp;
 	}
 	
@@ -359,17 +376,15 @@ public final class DBNinja {
 		 *how the order print statements work so that you don't need this function.
 		 */
 		connect_to_db();
-		String ret = "";
-		String query = "Select FName, LName From Customer WHERE CustID=" + CustID + ";";
-		Statement stmt = conn.createStatement();
-		ResultSet rset = stmt.executeQuery(query);
+		String customer = "";
+		String query = String.format("SELECT CustomerFName, CustomerLName FROM customer WHERE CustomerID=%d;", CustID);
+		Statement statement = conn.createStatement();
+		ResultSet resultSet = statement.executeQuery(query);
 		
-		while(rset.next())
-		{
-			ret = rset.getString(1) + " " + rset.getString(2);
-		}
+		if (resultSet.next())
+			customer = resultSet.getString("CustomerFName") + " " + resultSet.getString("CustomerLName");
 		conn.close();
-		return ret;
+		return customer;
 	}
 	
 	public static double getBaseBusPrice(String size, String crust) throws SQLException, IOException {
@@ -377,12 +392,13 @@ public final class DBNinja {
 		double bp = 0.0;
 		// add code to get the base cost (for the business) for that size and crust pizza Depending on how
 		// you store size and crust in your database, you may have to do a conversion
-		
-		
-		
-		
-		
+		Statement statement = conn.createStatement();
+		String query = String.format("SELECT BaseCP FROM base WHERE BaseSize = '%s' AND BaseCrust = '%s';", size, crust);
+		ResultSet resultSet = statement.executeQuery(query);
+		if (resultSet.next())
+			bp = resultSet.getDouble(1);
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 		return bp;
 	}
 
@@ -391,35 +407,46 @@ public final class DBNinja {
 		ArrayList<Discount> discs = new ArrayList<Discount>();
 		connect_to_db();
 		//returns a list of all the discounts.
-		
-		
-		
-		
-		
-		
-		
-		
+		Statement statement = conn.createStatement();
+		String query = "SELECT * FROM discount";
+		ResultSet resultSet = statement.executeQuery(query);
+		while (resultSet.next()) {
+			int id = resultSet.getInt("DiscountID");
+			String name = resultSet.getString("DiscountName");
+			double percentage = resultSet.getDouble("DiscountPercentage");
+			double amount = resultSet.getDouble("DiscountAmount");
+			boolean isPercentage = percentage != 0;
+			Discount discount = new Discount(id, name, isPercentage ? percentage : amount, isPercentage);
+			discs.add(discount);
+		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 		return discs;
 	}
 
 
 	public static ArrayList<Customer> getCustomerList() throws SQLException, IOException {
-		ArrayList<Customer> custs = new ArrayList<Customer>();
+		ArrayList<Customer> customerList = new ArrayList<Customer>();
 		connect_to_db();
 		/*
 		 * return an arrayList of all the customers. These customers should
 		 *print in alphabetical order, so account for that as you see fit.
 		*/
-
-
-		
-		
-		
-		
-		
+		Statement statement = conn.createStatement();
+		String query = "SELECT * FROM customer";
+		ResultSet resultSet = statement.executeQuery(query);
+		while (resultSet.next()) {
+			int id = resultSet.getInt("CustomerID");
+			String fName = resultSet.getString("CustomerFName");
+			String lName = resultSet.getString("CustomerLName");
+			String phone = resultSet.getString("CustomerPhone");
+			Customer customer = new Customer(id, fName, lName, phone);
+			customerList.add(customer);
+		}
+		//TODO: Sort list
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
-		return custs;
+		conn.close();
+		return customerList;
 	}
 	
 	public static int getNextOrderID() throws SQLException, IOException
@@ -450,14 +477,33 @@ public final class DBNinja {
 		 * I'm not picky about how they print (other than that it should
 		 * be in alphabetical order by name), just make sure it's readable.
 		 */
+		class ToppingPopularityEntity {
+			private String name;
+			private int count;
 
-
-		
-		
-		
-		
-		
+			ToppingPopularityEntity(String name, int count) {
+				this.name = name;
+				this.count = count;
+			}
+			public String getName() {
+				return name;
+			}
+			public int getCount() {
+				return count;
+			}
+		}
+		ArrayList<ToppingPopularityEntity> tPEList = new ArrayList<ToppingPopularityEntity>();
+		Statement statement = conn.createStatement();
+		String query = "SELECT * FROM ToppingPopularity;";
+		ResultSet resultSet = statement.executeQuery(query);
+		while (resultSet.next()) {
+			String name = resultSet.getString("Topping");
+			int count = resultSet.getInt("ToppingCount");
+			tPEList.add(new ToppingPopularityEntity(name, count));
+		}
+		//TODO: Sort tPEList and print
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 	}
 	
 	public static void printProfitByPizzaReport() throws SQLException, IOException
@@ -470,12 +516,14 @@ public final class DBNinja {
 		 * 
 		 * I'm not picky about how they print, just make sure it's readable.
 		 */
-		
-		
-		
-		
-		
+		Statement statement = conn.createStatement();
+		String query = "SELECT * FROM ProfitByPizza;";
+		ResultSet resultSet = statement.executeQuery(query);
+		while(resultSet.next()) {
+			//TODO: print
+		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 	}
 	
 	public static void printProfitByOrderType() throws SQLException, IOException
@@ -495,7 +543,8 @@ public final class DBNinja {
 		
 		
 		
-		//DO NOT FORGET TO CLOSE YOUR CONNECTION	
+		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
 	}
 	
 	
