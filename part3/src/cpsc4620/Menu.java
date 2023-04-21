@@ -3,6 +3,7 @@ package cpsc4620;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.rmi.server.ExportException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -200,7 +201,10 @@ public class Menu {
 	public static void ViewInventoryLevels() throws SQLException, IOException 
 	{
 		//print the inventory. I am really just concerned with the ID, the name, and the current inventory
-		DBNinja.printInventory();
+		ArrayList<Topping> toppingList = DBNinja.getInventory();
+		//toppingList.sort(Comparator.comparing(Topping::getTopName));
+		for (Topping topping: toppingList)
+			System.out.println(topping.toString());
 	}
 
 	// Select an inventory item and add more to the inventory level to re-stock the
@@ -210,12 +214,42 @@ public class Menu {
 		/*
 		 * This should print the current inventory and then ask the user which topping they want to add more to and how much to add
 		 */
-		
-		
-		
-		
-		
-		
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		ArrayList<Topping> toppingList = DBNinja.getInventory();
+		//toppingList.sort(Comparator.comparing(Topping::getTopName));
+		for (Topping topping: toppingList)
+			System.out.println(topping.toString());
+		System.out.print("Enter topping id: ");
+		int toppingID = 0;
+		Topping t = null;
+		try {
+			toppingID = Integer.parseInt(br.readLine());
+			boolean isIdPresent = false;
+			for (Topping topping: toppingList) {
+				if (topping.getTopID() == toppingID) {
+					isIdPresent = true;
+					t = topping;
+					break;
+				}
+			}
+			if (!isIdPresent) {
+				throw new Exception();
+			}
+		} catch (Exception e) {
+			System.out.println(INVALID_INPUT);
+			return;
+		}
+		System.out.print("Enter amount for " + t.getTopName() + ": ");
+		double newTopAmt = 0;
+		try {
+			newTopAmt = Double.parseDouble(br.readLine());
+			if (newTopAmt < 0)
+				throw new Exception();
+		} catch (Exception e) {
+			System.out.println(INVALID_INPUT);
+			return;
+		}
+		DBNinja.AddToInventory(t, newTopAmt);
 	}
 
 	// A function that builds a pizza. Used in our add new order function

@@ -193,9 +193,19 @@ public final class DBNinja {
 		/*
 		 * Adds toAdd amount of topping to topping t.
 		 */
-
-
+		double newInventory = t.getCurINVT() + toAdd;
+		String query = "UPDATE topping SET ToppingCurrentInventory = ? WHERE toppingId = ?";
+		PreparedStatement pStmt = conn.prepareStatement(query);
+		pStmt.setDouble(1, newInventory);
+		pStmt.setInt(2, t.getTopID());
+		try {
+			pStmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		pStmt.close();
+		conn.close();
 	}
 
 
@@ -211,10 +221,6 @@ public final class DBNinja {
 		 * 
 		 * The topping list should also print in alphabetical order
 		 */
-		ArrayList<Topping> toppingList = getInventory();
-		//toppingList.sort(Comparator.comparing(Topping::getTopName));
-		for (Topping topping: toppingList)
-			System.out.println(topping.toString());
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
 
@@ -249,6 +255,7 @@ public final class DBNinja {
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 		stmt.close();
 		conn.close();
+		//toppingList.sort(Comparator.comparing(Topping::getTopName));
 		return toppingList;
 	}
 
