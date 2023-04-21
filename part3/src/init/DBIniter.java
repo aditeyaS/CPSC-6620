@@ -133,19 +133,19 @@ public class DBIniter <T>
 	{
 		try 
 		{
-			String dir = Paths.get(System.getProperty("user.dir")).toString();		
-			dir += "\\src\\cpsc4620\\Menu.java";
+			String dir = Paths.get(System.getProperty("user.dir")).toString();
+			dir += "\\cpsc4620\\Menu.java";
 			
 			String code = Paths.get(System.getProperty("user.dir")).toString();
-			code += "\\src\\init\\graph.java";
+			code += "\\init\\graph.java";
 			
 			try {
-				FileWriter frTime = new FileWriter((Paths.get(System.getProperty("user.dir")).toString() + "\\src\\init\\setup"), true);
+				FileWriter frTime = new FileWriter((Paths.get(System.getProperty("user.dir")).toString() + "\\init\\setup"), true);
 		        frTime.write("" + java.time.LocalDateTime.now().toLocalDate().toString() + " " + java.time.LocalDateTime.now().toLocalTime().toString() + "\t");
 		        frTime.write(Paths.get(System.getProperty("user.dir")).toString() + "\n\n");
 		        frTime.close();
 			} catch (Exception e1) {
-				e1.printStackTrace();
+				
 			}
 			
 			Random r = new Random();
@@ -218,8 +218,8 @@ public class DBIniter <T>
 			} 
 			catch (IOException e) 
 			{
-				System.out.println("FAILED TO WRITE");
-				e.printStackTrace();
+				//System.out.println("FAILED TO WRITE");
+				//e.printStackTrace();
 			}
 		}
 		catch(Exception e)

@@ -26,15 +26,16 @@ import init.DBIniter;
  */
 
 public class Menu {
+
 	public static final String INVALID_INPUT = "Invalid Input";
 
 	public static void main(String[] args) throws SQLException, IOException {
 		System.out.println("Welcome to Taylor's Pizzeria!");
-
+		
 		int menu_option = 0;
 
 		// present a menu of options and take their selection
-
+		
 		PrintMenu();
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		DBIniter.init();
@@ -43,31 +44,31 @@ public class Menu {
 
 		while (menu_option != 9) {
 			switch (menu_option) {
-				case 1:// enter order
-					EnterOrder();
-					break;
-				case 2:// view customers
-					viewCustomers();
-					break;
-				case 3:// enter customer
-					EnterCustomer();
-					break;
-				case 4:// view order
-					// open/closed/date
-					ViewOrders();
-					break;
-				case 5:// mark order as complete
-					MarkOrderAsComplete();
-					break;
-				case 6:// view inventory levels
-					ViewInventoryLevels();
-					break;
-				case 7:// add to inventory
-					AddInventory();
-					break;
-				case 8:// view reports
-					PrintReports();
-					break;
+			case 1:// enter order
+				EnterOrder();
+				break;
+			case 2:// view customers
+				viewCustomers();
+				break;
+			case 3:// enter customer
+				EnterCustomer();
+				break;
+			case 4:// view order
+				// open/closed/date
+				ViewOrders();
+				break;
+			case 5:// mark order as complete
+				MarkOrderAsComplete();
+				break;
+			case 6:// view inventory levels
+				ViewInventoryLevels();
+				break;
+			case 7:// add to inventory
+				AddInventory();
+				break;
+			case 8:// view reports
+				PrintReports();
+				break;
 			}
 			PrintMenu();
 			option = reader.readLine();
@@ -91,7 +92,8 @@ public class Menu {
 	}
 
 	// allow for a new order to be placed
-	public static void EnterOrder() throws SQLException, IOException {
+	public static void EnterOrder() throws SQLException, IOException 
+	{
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		/*
 		 * EnterOrder should do the following:
@@ -109,49 +111,27 @@ public class Menu {
 		 * 
 		 * return to menu
 		 */
-		System.out.print("Is the order for existing customer? (Y/N): ");
-		String customerChoice = "";
-		try {
-			customerChoice = reader.readLine();
-			if (!(customerChoice.equalsIgnoreCase("y") || customerChoice.equalsIgnoreCase("n")))
-				throw new Exception();
-		} catch (Exception e) {
-			System.out.println(INVALID_INPUT);
-			return;
-		}
-//		if (customerChoice.equalsIgnoreCase("y")) {
-//
-//		} else {
-//
-//		}
-		System.out.println("1 - delivery\n2 - pickup\n3 - dinein\nEnter order type? (1,2,3): ");
-		int orderType = 0;
-		try {
-			orderType = Integer.parseInt(reader.readLine());
-			if (!(orderType == 1 || orderType == 2 || orderType == 3))
-				throw new Exception();
-		} catch (Exception e) {
-			System.out.println(INVALID_INPUT);
-			return;
-		}
-
-
+		
+		
+		
 		System.out.println("Finished adding order...Returning to menu...");
 	}
-
-
+	
+	
 	public static void viewCustomers() throws SQLException, IOException {
 		/*
 		 * Simply print out all of the customers from the database. 
 		 */
 		ArrayList<Customer> customerList = DBNinja.getCustomerList();
-
-
+		for (Customer customer: customerList) {
+			System.out.println(customer.toString());
+		}
 	}
-
+	
 
 	// Enter a new customer in the database
-	public static void EnterCustomer() throws SQLException, IOException {
+	public static void EnterCustomer() throws SQLException, IOException 
+	{
 		/*
 		 * Ask what the name of the customer is. YOU MUST TELL ME (the grader) HOW TO FORMAT THE FIRST NAME, LAST NAME, AND PHONE NUMBER.
 		 * If you ask for first and last name one at a time, tell me to insert First name <enter> Last Name (or separate them by different print statements)
@@ -163,30 +143,15 @@ public class Menu {
 		 * 
 		 * Once you get the name and phone number (and anything else your design might have) add it to the DB
 		 */
-		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-		System.out.print("Enter first name: ");
-		String fName = reader.readLine();
-		System.out.print("Enter last name: ");
-		String lName = reader.readLine();
-		System.out.print("Enter phone number (xxx-xxx-xxxx): ");
-		String phone = "";
-		try {
-			phone = reader.readLine();
-			String pattern = "\\d{3}-\\d{3}-\\d{4}";
-			if (!phone.matches(pattern))
-				throw new Exception();
-		} catch (Exception e) {
-			System.out.println(INVALID_INPUT);
-			return;
-		}
-		Customer customer = new Customer(0, fName, lName, phone);
-		//TODO: Add
-		System.out.println("Finished adding customer...Returning to menu...");
+		
+		
+
 	}
 
 	// View any orders that are not marked as completed
-	public static void ViewOrders() throws SQLException, IOException {
-		/*
+	public static void ViewOrders() throws SQLException, IOException 
+	{
+	/*
 	 * This should be subdivided into two options: print all orders (using simplified view) and print all orders (using simplified view) since a specific date.
 	 * 
 	 * Once you print the orders (using either sub option) you should then ask which order I want to see in detail
@@ -194,42 +159,60 @@ public class Menu {
 	 * When I enter the order, print out all the information about that order, not just the simplified view.
 	 * 
 	 */
-
+		
 	}
 
-
+	
 	// When an order is completed, we need to make sure it is marked as complete
-	public static void MarkOrderAsComplete() throws SQLException, IOException {
+	public static void MarkOrderAsComplete() throws SQLException, IOException 
+	{
 		/*All orders that are created through java (part 3, not the 7 orders from part 2) should start as incomplete
 		 * 
 		 * When this function is called, you should print all of the orders marked as complete 
 		 * and allow the user to choose which of the incomplete orders they wish to mark as complete
 		 * 
 		 */
-
+		
+		
+		
+		
+		
+		
 
 	}
 
 	// See the list of inventory and it's current level
-	public static void ViewInventoryLevels() throws SQLException, IOException {
+	public static void ViewInventoryLevels() throws SQLException, IOException 
+	{
 		//print the inventory. I am really just concerned with the ID, the name, and the current inventory
-
-
+		
+		
+		
+		
+		
+		
+		
 	}
 
 	// Select an inventory item and add more to the inventory level to re-stock the
 	// inventory
-	public static void AddInventory() throws SQLException, IOException {
+	public static void AddInventory() throws SQLException, IOException 
+	{
 		/*
 		 * This should print the current inventory and then ask the user which topping they want to add more to and how much to add
 		 */
-
-
+		
+		
+		
+		
+		
+		
 	}
 
 	// A function that builds a pizza. Used in our add new order function
-	public static Pizza buildPizza(int orderID) throws SQLException, IOException {
-
+	public static Pizza buildPizza(int orderID) throws SQLException, IOException 
+	{
+		
 		/*
 		 * This is a helper function for first menu option.
 		 * 
@@ -245,36 +228,44 @@ public class Menu {
 		 */
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		Pizza ret = null;
-
-
+		
+		
+		
+		
+		
+		
+		
 		return ret;
 	}
-
-	private static int getTopIndexFromList(int TopID, ArrayList<Topping> tops) {
+	
+	private static int getTopIndexFromList(int TopID, ArrayList<Topping> tops)
+	{
 		/*
 		 * This is a helper function I used to get a topping index from a list of toppings
 		 * It's very possible you never need to use a function like this
 		 * 
 		 */
 		int ret = -1;
-
-
+		
+		
+		
 		return ret;
 	}
-
-
-	public static void PrintReports() throws SQLException, NumberFormatException, IOException {
+	
+	
+	public static void PrintReports() throws SQLException, NumberFormatException, IOException
+	{
 		/*
 		 * This function calls the DBNinja functions to print the three reports.
 		 * 
 		 * You should ask the user which report to print
 		 */
-		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		System.out.println("1 - Topping Popularity\n2 - Profit By Pizza\n3 - Profit By Order Type");
 		System.out.print("Select report type? (1,2,3): ");
 		int reportType = 0;
 		try {
-			reportType = Integer.parseInt(reader.readLine());
+			reportType = Integer.parseInt(br.readLine());
 			if (!(reportType == 1 || reportType == 2 || reportType == 3))
 				throw new Exception();
 		} catch (Exception e) {
