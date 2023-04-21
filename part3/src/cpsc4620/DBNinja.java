@@ -43,8 +43,6 @@ public final class DBNinja {
 	public final static String crust_gf = "Gluten-Free";
 
 
-
-	
 	private static boolean connect_to_db() throws SQLException, IOException {
 
 		try {
@@ -58,23 +56,20 @@ public final class DBNinja {
 
 	}
 
-	
-	public static void addOrder(Order o) throws SQLException, IOException 
-	{
+
+	public static void addOrder(Order o) throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * add code to add the order to the DB. Remember that we're not just
 		 * adding the order to the order DB table, but we're also recording
 		 * the necessary data for the delivery, dinein, and pickup tables
 		 */
-	
 
-		
+
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
-	
-	public static void addPizza(Pizza p) throws SQLException, IOException
-	{
+
+	public static void addPizza(Pizza p) throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * Add the code needed to insert the pizza into into the database.
@@ -82,31 +77,24 @@ public final class DBNinja {
 		 * instance of topping usage to that bridge table if you have't accounted
 		 * for that somewhere else.
 		 */
-		
-		
-		
-		
-		
+
+
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
-	
-	public static int getMaxPizzaID() throws SQLException, IOException
-	{
+
+	public static int getMaxPizzaID() throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * A function I needed because I forgot to make my pizzas auto increment in my DB.
 		 * It goes and fetches the largest PizzaID in the pizza table.
 		 * You wont need to implement this function if you didn't forget to do that
 		 */
-		
-		
-		
-		
-		
+
+
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 		return -1;
 	}
-	
+
 	public static void useTopping(Pizza p, Topping t, boolean isDoubled) throws SQLException, IOException //this function will update toppings inventory in SQL and add entities to the Pizzatops table. Pass in the p pizza that is using t topping
 	{
 		connect_to_db();
@@ -117,87 +105,89 @@ public final class DBNinja {
 		 * Ideally, you should't let toppings go negative. If someone tries to use toppings that you don't have, just print
 		 * that you've run out of that topping.
 		 */
-		
-		
-		
-		
-		
-		
-		
+
+
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
-	
-	
-	public static void usePizzaDiscount(Pizza p, Discount d) throws SQLException, IOException
-	{
+
+
+	public static void usePizzaDiscount(Pizza p, Discount d) throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * Helper function I used to update the pizza-discount bridge table. 
 		 * You might use this, you might not depending on where / how to want to update
 		 * this table
 		 */
-		
-		
-		
-		
-		
+
+
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
-	
-	public static void useOrderDiscount(Order o, Discount d) throws SQLException, IOException
-	{
+
+	public static void useOrderDiscount(Order o, Discount d) throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * Helper function I used to update the pizza-discount bridge table. 
 		 * You might use this, you might not depending on where / how to want to update
 		 * this table
 		 */
-		
-		
-		
-		
-		
+
+
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
-	
 
 
-	
 	public static void addCustomer(Customer c) throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * This should add a customer to the database
 		 */
-				
-		
-		
-		
-		
+
+		String query = "SELECT * FROM customer WHERE CustomerFName=? AND CustomerLName=? AND CustomerPhone=?";
+		PreparedStatement pS = conn.prepareStatement(query);
+		pS.setString(1, c.getFName());
+		pS.setString(2, c.getLName());
+		pS.setString(3, c.getPhone());
+		boolean customerExists = false;
+		try (ResultSet rSet = pS.executeQuery()) {
+			customerExists = rSet.next();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if (customerExists) {
+			System.out.println("Customer already exists. Returning to main menu...");
+		} else {
+			query = "INSERT INTO customer(CustomerFName, CustomerLName, CustomerPhone) VALUES(?, ?, ?)";
+			PreparedStatement ps = conn.prepareStatement(query);
+			ps.setString(1, c.getFName());
+			ps.setString(2, c.getLName());
+			ps.setString(3, c.getPhone());
+			try {
+				ps.executeUpdate();
+				System.out.println("Customer added. Returning to main menu...");
+				ps.close();
+			} catch (Exception e) {
+				ps.close();
+				e.printStackTrace();
+			}
+		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		pS.close();
+		conn.close();
 	}
 
 
-	
 	public static void CompleteOrder(Order o) throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * add code to mark an order as complete in the DB. You may have a boolean field
 		 * for this, or maybe a completed time timestamp. However you have it.
 		 */
-		
 
 
-		
-		
-		
-		
-		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
 
 
-	
-	
 	public static void AddToInventory(Topping t, double toAdd) throws SQLException, IOException {
 		connect_to_db();
 		/*
@@ -205,19 +195,13 @@ public final class DBNinja {
 		 */
 
 
-		
-		
-		
-		
-		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
 
-	
 
 	public static void printInventory() throws SQLException, IOException {
-		connect_to_db();
-		
+		//connect_to_db();
+
 		/*
 		 * I used this function to PRINT (not return) the inventory list.
 		 * When you print the inventory (either here or somewhere else)
@@ -227,18 +211,14 @@ public final class DBNinja {
 		 * 
 		 * The topping list should also print in alphabetical order
 		 */
-		
-		
-		
-		
-		
-		
-		
-		
-		//DO NOT FORGET TO CLOSE YOUR CONNECTION		
+		ArrayList<Topping> toppingList = getInventory();
+		//toppingList.sort(Comparator.comparing(Topping::getTopName));
+		for (Topping topping: toppingList)
+			System.out.println(topping.toString());
+		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
-	
-	
+
+
 	public static ArrayList<Topping> getInventory() throws SQLException, IOException {
 		connect_to_db();
 		/*
@@ -246,16 +226,30 @@ public final class DBNinja {
 		 * should be returned in alphabetical order if you don't
 		 * plan on using a printInventory function
 		 */
-
-		
-
-		
-		
-		
-		
-		
+		ArrayList<Topping> toppingList = new ArrayList<Topping>();
+		String query = "SELECT * FROM topping ORDER BY ToppingName";
+		Statement stmt = conn.createStatement();
+		try (ResultSet rSet = stmt.executeQuery(query)) {
+			while (rSet.next()) {
+				int id = rSet.getInt("ToppingID");
+				String name = rSet.getString("ToppingName");
+				double cusPrice = rSet.getDouble("ToppingSP");
+				double busPrice = rSet.getDouble("ToppingCP");
+				int curI = (int)(rSet.getDouble("ToppingCurrentInventory"));
+				int minI = (int)(rSet.getDouble("ToppingMinimumInventory"));
+				double pAmt = rSet.getDouble("ToppingAmtS");
+				double mAmt = rSet.getDouble("ToppingAmtM");
+				double lAmt = rSet.getDouble("ToppingAmtL");
+				double xlAmt = rSet.getDouble("ToppingAmtXL");
+				toppingList.add(new Topping(id, name, pAmt, mAmt, lAmt, xlAmt, cusPrice, busPrice, minI, curI));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
-		return null;
+		stmt.close();
+		conn.close();
+		return toppingList;
 	}
 
 
@@ -272,46 +266,31 @@ public final class DBNinja {
 		 */
 
 
-
-		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 		return null;
 	}
-	
-	public static ArrayList<Order> sortOrders(ArrayList<Order> list)
-	{
+
+	public static ArrayList<Order> sortOrders(ArrayList<Order> list) {
 		/*
 		 * This was a function that I used to sort my arraylist based on date.
 		 * You may or may not need this function depending on how you fetch
 		 * your orders from the DB in the getCurrentOrders function.
 		 */
-		
-		
-		
-		
-		
-		
-		
+
+
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 		return null;
-		
+
 	}
-	
-	public static boolean checkDate(int year, int month, int day, String dateOfOrder)
-	{
+
+	public static boolean checkDate(int year, int month, int day, String dateOfOrder) {
 		//Helper function I used to help sort my dates. You likely wont need these
-		
-		
-		
-		
-		
-		
-		
-		
+
+
 		return false;
 	}
-	
-	
+
+
 	/*
 	 * The next 3 private functions help get the individual components of a SQL datetime object. 
 	 * You're welcome to keep them or remove them.
@@ -320,38 +299,30 @@ public final class DBNinja {
 	{
 		return Integer.parseInt(date.substring(0,4));
 	}
+
 	private static int getMonth(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
 	{
 		return Integer.parseInt(date.substring(5, 7));
 	}
+
 	private static int getDay(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
 	{
 		return Integer.parseInt(date.substring(8, 10));
 	}
 
 
-
-	
-	
-	
 	public static double getBaseCustPrice(String size, String crust) throws SQLException, IOException {
 		connect_to_db();
 		double bp = 0.0;
 		// add code to get the base price (for the customer) for that size and crust pizza Depending on how
 		// you store size & crust in your database, you may have to do a conversion
-		
-		
-		
-		
-		
-		
-		
+
+
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 		return bp;
 	}
-	
-	public static String getCustomerName(int CustID) throws SQLException, IOException
-	{
+
+	public static String getCustomerName(int CustID) throws SQLException, IOException {
 		/*
 		 *This is a helper function I used to fetch the name of a customer
 		 *based on a customer ID. It actually gets called in the Order class
@@ -363,42 +334,33 @@ public final class DBNinja {
 		String query = "Select FName, LName From Customer WHERE CustID=" + CustID + ";";
 		Statement stmt = conn.createStatement();
 		ResultSet rset = stmt.executeQuery(query);
-		
-		while(rset.next())
-		{
+
+		while(rset.next()) {
 			ret = rset.getString(1) + " " + rset.getString(2);
 		}
+		stmt.close();
 		conn.close();
 		return ret;
 	}
-	
+
 	public static double getBaseBusPrice(String size, String crust) throws SQLException, IOException {
 		connect_to_db();
 		double bp = 0.0;
 		// add code to get the base cost (for the business) for that size and crust pizza Depending on how
 		// you store size and crust in your database, you may have to do a conversion
-		
-		
-		
-		
-		
+
+
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 		return bp;
 	}
 
-	
+
 	public static ArrayList<Discount> getDiscountList() throws SQLException, IOException {
 		ArrayList<Discount> discs = new ArrayList<Discount>();
 		connect_to_db();
 		//returns a list of all the discounts.
-		
-		
-		
-		
-		
-		
-		
-		
+
+
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 		return discs;
 	}
@@ -425,29 +387,24 @@ public final class DBNinja {
 			e.printStackTrace();
 		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		stmt.close();
 		conn.close();
 		return customerList;
 	}
-	
-	public static int getNextOrderID() throws SQLException, IOException
-	{
+
+	public static int getNextOrderID() throws SQLException, IOException {
 		/*
 		 * A helper function I had to use because I forgot to make
 		 * my OrderID auto increment...You can remove it if you
 		 * did not forget to auto increment your orderID.
 		 */
-		
-		
-		
-		
-		
-		
+
+
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 		return -1;
 	}
-	
-	public static void printToppingPopReport() throws SQLException, IOException
-	{
+
+	public static void printToppingPopReport() throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * Prints the ToppingPopularity view. Remember that these views
@@ -471,11 +428,11 @@ public final class DBNinja {
 			e.printStackTrace();
 		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		stmt.close();
 		conn.close();
 	}
-	
-	public static void printProfitByPizzaReport() throws SQLException, IOException
-	{
+
+	public static void printProfitByPizzaReport() throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * Prints the ProfitByPizza view. Remember that these views
@@ -502,11 +459,11 @@ public final class DBNinja {
 			e.printStackTrace();
 		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		stmt.close();
 		conn.close();
 	}
-	
-	public static void printProfitByOrderType() throws SQLException, IOException
-	{
+
+	public static void printProfitByOrderType() throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * Prints the ProfitByOrderType view. Remember that these views
@@ -537,9 +494,9 @@ public final class DBNinja {
 			e.printStackTrace();
 		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		stmt.close();
 		conn.close();
 	}
-	
-	
+
 
 }

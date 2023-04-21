@@ -143,9 +143,24 @@ public class Menu {
 		 * 
 		 * Once you get the name and phone number (and anything else your design might have) add it to the DB
 		 */
-		
-		
-
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		System.out.print("Enter first name: ");
+		String fName = br.readLine();
+		System.out.print("Enter last name: ");
+		String lName = br.readLine();
+		System.out.print("Enter phone number (xxx-xxx-xxxx): ");
+		String phone = "";
+		try {
+			phone = br.readLine();
+			String pattern = "\\d{3}-\\d{3}-\\d{4}";
+			if (!phone.matches(pattern))
+				throw new Exception();
+		} catch (Exception e) {
+			System.out.println(INVALID_INPUT);
+			return;
+		}
+		Customer customer = new Customer(0, fName, lName, phone);
+		DBNinja.addCustomer(customer);
 	}
 
 	// View any orders that are not marked as completed
@@ -185,13 +200,7 @@ public class Menu {
 	public static void ViewInventoryLevels() throws SQLException, IOException 
 	{
 		//print the inventory. I am really just concerned with the ID, the name, and the current inventory
-		
-		
-		
-		
-		
-		
-		
+		DBNinja.printInventory();
 	}
 
 	// Select an inventory item and add more to the inventory level to re-stock the
