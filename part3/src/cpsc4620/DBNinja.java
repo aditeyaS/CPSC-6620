@@ -271,10 +271,86 @@ public final class DBNinja {
 		 * Also, like toppings, whenever we print out the orders using menu function 4 and 5
 		 * these orders should print in order from newest to oldest.
 		 */
-
-
+		ArrayList<Order> orderList = new ArrayList<Order>();
+		String query = "SELECT * FROM orders ORDER BY OrderTime DESC";
+		Statement stmt = conn.createStatement();
+		try (ResultSet rSet = stmt.executeQuery(query)) {
+			while (rSet.next()) {
+				int id = rSet.getInt("OrderID");
+				String type = rSet.getString("OrderType");
+				String date = rSet.getString("OrderTime");
+				double sp = rSet.getDouble("OrderSP");
+				double cp = rSet.getDouble("OrderCP");
+				int cId = rSet.getInt("OrderCustomerID");
+				int isComplete = isOrderComplete(id);
+				if (type.equals(pickup)) {
+					PickupOrder o = new PickupOrder(id, cId, date, sp, cp, isComplete, isComplete);
+					orderList.add(o);
+				} else if (type.equals(dine_in)) {
+					int tablenum = getTableNumber(id);
+					DineinOrder o = new DineinOrder(id, cId, date, sp, cp, isComplete, tablenum);
+					orderList.add(o);
+				} else {
+					String address = getDeliveryAddress(id);
+					DeliveryOrder o = new DeliveryOrder(id, cId, date, sp, cp, isComplete, address);
+					orderList.add(o);
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
-		return null;
+		conn.close();
+		return orderList;
+	}
+
+	private static int isOrderComplete (int orderId) throws SQLException {
+		/*Adi
+		* Checks if an order is complete because i have taken complete in the pizza table
+		*/
+		return 1;
+	}
+
+	private static int getTableNumber (int orderId) throws SQLException {
+		/*Adi
+		 * 	Used in the getCurrentOrders()
+		 * Don't need to open/close connection as it's happening in above function
+		 */
+		int tableNumber = -1;
+		String query = "SELECT * FROM dinein WHERE DineinOrderID = ?";
+		PreparedStatement pStmt = conn.prepareStatement(query);
+		pStmt.setInt(1, orderId);
+		try (ResultSet rSet = pStmt.executeQuery()) {
+			if (rSet.next()) tableNumber = rSet.getInt(1);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		pStmt.close();
+		return tableNumber;
+	}
+
+	private static String getDeliveryAddress(int orderId) throws SQLException {
+		/*Adi
+		 * Used in the getCurrentOrders()
+		 * Don't need to open/close connection as it's happening in above function
+		 */
+		String custAddress = "";
+		String query = "SELECT * FROM delivery WHERE DeliveryOrderID = ?";
+		PreparedStatement pStmt = conn.prepareStatement(query);
+		pStmt.setInt(1, orderId);
+		try (ResultSet rSet = pStmt.executeQuery()) {
+			if (rSet.next()) {
+				String address = rSet.getString("DeliveryAddress");
+				String city = rSet.getString("DeliveryCity");
+				String state = rSet.getString("DeliveryCity");
+				String zip = rSet.getString("DeliveryCity");
+				custAddress = address + ", " + city + ", " + state + ", " + zip;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		pStmt.close();
+		return custAddress;
 	}
 
 	public static ArrayList<Order> sortOrders(ArrayList<Order> list) {
@@ -337,17 +413,16 @@ public final class DBNinja {
 		 *how the order print statements work so that you don't need this function.
 		 */
 		connect_to_db();
-		String ret = "";
-		String query = "Select FName, LName From Customer WHERE CustID=" + CustID + ";";
-		Statement stmt = conn.createStatement();
-		ResultSet rset = stmt.executeQuery(query);
-
-		while(rset.next()) {
-			ret = rset.getString(1) + " " + rset.getString(2);
+		String customerName = "";
+		String query = "SELECT CustomerFName, CustomerLName FROM customer WHERE CustomerID = ?";
+		PreparedStatement pStmt = conn.prepareStatement(query);
+		pStmt.setInt(1, CustID);
+		try (ResultSet rSet = pStmt.executeQuery()) {
+			if (rSet.next()) customerName = rSet.getString(1) + " " + rSet.getString(2);
 		}
-		stmt.close();
+		pStmt.close();
 		conn.close();
-		return ret;
+		return customerName;
 	}
 
 	public static double getBaseBusPrice(String size, String crust) throws SQLException, IOException {

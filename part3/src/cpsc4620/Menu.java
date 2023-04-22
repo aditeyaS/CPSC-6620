@@ -5,8 +5,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.rmi.server.ExportException;
 import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import init.DBIniter;
 
@@ -32,11 +35,11 @@ public class Menu {
 
 	public static void main(String[] args) throws SQLException, IOException {
 		System.out.println("Welcome to Taylor's Pizzeria!");
-		
+
 		int menu_option = 0;
 
 		// present a menu of options and take their selection
-		
+
 		PrintMenu();
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		DBIniter.init();
@@ -45,31 +48,31 @@ public class Menu {
 
 		while (menu_option != 9) {
 			switch (menu_option) {
-			case 1:// enter order
-				EnterOrder();
-				break;
-			case 2:// view customers
-				viewCustomers();
-				break;
-			case 3:// enter customer
-				EnterCustomer();
-				break;
-			case 4:// view order
-				// open/closed/date
-				ViewOrders();
-				break;
-			case 5:// mark order as complete
-				MarkOrderAsComplete();
-				break;
-			case 6:// view inventory levels
-				ViewInventoryLevels();
-				break;
-			case 7:// add to inventory
-				AddInventory();
-				break;
-			case 8:// view reports
-				PrintReports();
-				break;
+				case 1:// enter order
+					EnterOrder();
+					break;
+				case 2:// view customers
+					viewCustomers();
+					break;
+				case 3:// enter customer
+					EnterCustomer();
+					break;
+				case 4:// view order
+					// open/closed/date
+					ViewOrders();
+					break;
+				case 5:// mark order as complete
+					MarkOrderAsComplete();
+					break;
+				case 6:// view inventory levels
+					ViewInventoryLevels();
+					break;
+				case 7:// add to inventory
+					AddInventory();
+					break;
+				case 8:// view reports
+					PrintReports();
+					break;
 			}
 			PrintMenu();
 			option = reader.readLine();
@@ -93,8 +96,7 @@ public class Menu {
 	}
 
 	// allow for a new order to be placed
-	public static void EnterOrder() throws SQLException, IOException 
-	{
+	public static void EnterOrder() throws SQLException, IOException {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		/*
 		 * EnterOrder should do the following:
@@ -112,13 +114,12 @@ public class Menu {
 		 * 
 		 * return to menu
 		 */
-		
-		
-		
+
+
 		System.out.println("Finished adding order...Returning to menu...");
 	}
-	
-	
+
+
 	public static void viewCustomers() throws SQLException, IOException {
 		/*
 		 * Simply print out all of the customers from the database. 
@@ -128,11 +129,10 @@ public class Menu {
 			System.out.println(customer.toString());
 		}
 	}
-	
+
 
 	// Enter a new customer in the database
-	public static void EnterCustomer() throws SQLException, IOException 
-	{
+	public static void EnterCustomer() throws SQLException, IOException {
 		/*
 		 * Ask what the name of the customer is. YOU MUST TELL ME (the grader) HOW TO FORMAT THE FIRST NAME, LAST NAME, AND PHONE NUMBER.
 		 * If you ask for first and last name one at a time, tell me to insert First name <enter> Last Name (or separate them by different print statements)
@@ -165,9 +165,8 @@ public class Menu {
 	}
 
 	// View any orders that are not marked as completed
-	public static void ViewOrders() throws SQLException, IOException 
-	{
-	/*
+	public static void ViewOrders() throws SQLException, IOException {
+		/*
 	 * This should be subdivided into two options: print all orders (using simplified view) and print all orders (using simplified view) since a specific date.
 	 * 
 	 * Once you print the orders (using either sub option) you should then ask which order I want to see in detail
@@ -175,31 +174,94 @@ public class Menu {
 	 * When I enter the order, print out all the information about that order, not just the simplified view.
 	 * 
 	 */
-		
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		System.out.println("Would you like to:");
+		System.out.println("1 - display all orders.");
+		System.out.println("2 - Show orders after a specific date.");
+		System.out.print("Choose an option? (1,2) ");
+		int orderViewOption = 0;
+		try {
+			orderViewOption = Integer.parseInt(br.readLine());
+			if (!(orderViewOption == 1 || orderViewOption == 2))
+				throw new Exception();
+		} catch (Exception e) {
+			System.out.println(INVALID_INPUT);
+			return;
+		}
+		ArrayList<Order> orderList = DBNinja.getCurrentOrders();
+		if (orderViewOption == 2) {
+			System.out.print("Enter date (yyyy-MM-dd): ");
+			String givenDate = "";
+			try {
+				givenDate = br.readLine();
+				String pattern = "\\d{4}-\\d{2}-\\d{2}";
+				if (!givenDate.matches(pattern))
+					throw new Exception();
+				Iterator<Order> orderIterator = orderList.iterator();
+				while (orderIterator.hasNext()) {
+					if (isOrderDateSmallerThatGivenDate(orderIterator.next().getDate(), givenDate)) {
+						orderIterator.remove();
+					}
+				}
+			} catch (Exception e) {
+				System.out.println(INVALID_INPUT);
+				return;
+			}
+		}
+		if (!orderList.isEmpty()) {
+			for (Order order: orderList)
+				System.out.println(order.toSimplePrint());
+		} else {
+			System.out.println("There are no orders");
+		}
+		System.out.println("Which order would you like to see in detail?");
+		System.out.print("Enter order id: ");
+		int orderId = -1;
+		try {
+			orderId = Integer.parseInt(br.readLine());
+			boolean orderFound = false;
+			for (Order order: orderList) {
+				if (order.getOrderID() == orderId) {
+					orderFound = true;
+					System.out.println(order);
+					break;
+				}
+			}
+			if (!orderFound) throw new Exception();
+		} catch (Exception e) {
+			System.out.println(INVALID_INPUT);
+		}
 	}
 
-	
+	public static boolean isOrderDateSmallerThatGivenDate (String orderDate, String givenDate) {
+		givenDate += " 00:00:00";
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Date orderDateObj = null;
+		Date givenDateObj = null;
+		try {
+			orderDateObj = dateFormat.parse(orderDate);
+			givenDateObj = dateFormat.parse(givenDate);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return orderDateObj.compareTo(givenDateObj) < 0;
+	}
+
+
 	// When an order is completed, we need to make sure it is marked as complete
-	public static void MarkOrderAsComplete() throws SQLException, IOException 
-	{
+	public static void MarkOrderAsComplete() throws SQLException, IOException {
 		/*All orders that are created through java (part 3, not the 7 orders from part 2) should start as incomplete
 		 * 
 		 * When this function is called, you should print all of the orders marked as complete 
 		 * and allow the user to choose which of the incomplete orders they wish to mark as complete
 		 * 
 		 */
-		
-		
-		
-		
-		
-		
+
 
 	}
 
 	// See the list of inventory and it's current level
-	public static void ViewInventoryLevels() throws SQLException, IOException 
-	{
+	public static void ViewInventoryLevels() throws SQLException, IOException {
 		//print the inventory. I am really just concerned with the ID, the name, and the current inventory
 		ArrayList<Topping> toppingList = DBNinja.getInventory();
 		//toppingList.sort(Comparator.comparing(Topping::getTopName));
@@ -209,8 +271,7 @@ public class Menu {
 
 	// Select an inventory item and add more to the inventory level to re-stock the
 	// inventory
-	public static void AddInventory() throws SQLException, IOException 
-	{
+	public static void AddInventory() throws SQLException, IOException {
 		/*
 		 * This should print the current inventory and then ask the user which topping they want to add more to and how much to add
 		 */
@@ -253,9 +314,8 @@ public class Menu {
 	}
 
 	// A function that builds a pizza. Used in our add new order function
-	public static Pizza buildPizza(int orderID) throws SQLException, IOException 
-	{
-		
+	public static Pizza buildPizza(int orderID) throws SQLException, IOException {
+
 		/*
 		 * This is a helper function for first menu option.
 		 * 
@@ -271,33 +331,29 @@ public class Menu {
 		 */
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		Pizza ret = null;
-		
-		
-		
-		
-		
-		
-		
+
+
 		return ret;
 	}
-	
-	private static int getTopIndexFromList(int TopID, ArrayList<Topping> tops)
-	{
+
+	private static int getTopIndexFromList(int TopID, ArrayList<Topping> tops) {
 		/*
 		 * This is a helper function I used to get a topping index from a list of toppings
 		 * It's very possible you never need to use a function like this
 		 * 
 		 */
 		int ret = -1;
-		
-		
-		
+		for (Topping topping: tops) {
+			ret++;
+			if (topping.getTopID() == TopID) {
+				break;
+			}
+		}
 		return ret;
 	}
-	
-	
-	public static void PrintReports() throws SQLException, NumberFormatException, IOException
-	{
+
+
+	public static void PrintReports() throws SQLException, NumberFormatException, IOException {
 		/*
 		 * This function calls the DBNinja functions to print the three reports.
 		 * 
