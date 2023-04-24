@@ -114,7 +114,106 @@ public class Menu {
 		 * 
 		 * return to menu
 		 */
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		System.out.print("Is the order for existing customer? (y/n) :");
+		String existingCustomerChoice = "";
+		try {
+			existingCustomerChoice = br.readLine();
+			if (!(existingCustomerChoice.equalsIgnoreCase("y") || existingCustomerChoice.equalsIgnoreCase("n")))
+				throw new Exception();
+		} catch (Exception e) {
+			System.out.println(INVALID_INPUT);
+			return;
+		}
+		int customerId = -1;
+		if (existingCustomerChoice.equalsIgnoreCase("y")) {
+			System.out.println("Here's a list of customers:");
+			viewCustomers();
+			System.out.print("Enter customer id?: ");
+			try {
+				customerId = Integer.parseInt(br.readLine());
+			} catch (Exception e) {
+				System.out.println(INVALID_INPUT);
+				return;
+			}
+		} else {
+			customerId = EnterCustomer();
+			if (customerId == -1)
+				return;
+		}
+		System.out.println("Is this order for:");
+		String choice = "1 - " + DBNinja.dine_in + "\n" +
+				"2 - " + DBNinja.pickup + "\n" +
+				"3 - " + DBNinja.delivery;
+		System.out.println(choice);
+		System.out.print("Enter order type? :");
+		int orderType = -1;
+		try {
+			orderType = Integer.parseInt(br.readLine());
+			if (orderType < 1 || orderType > 3)
+				throw new Exception();
+		} catch (Exception e) {
+			System.out.println(INVALID_INPUT);
+			return;
+		}
+		int generatedOrderId = -1;
+		Order order;
+		if (orderType == 1) {
+			System.out.println("Enter table number");
+			int tableNo = -1;
+			try {
+				tableNo = Integer.parseInt(br.readLine());
+				if (tableNo < 0) throw new Exception();
+				DineinOrder o = new DineinOrder(-1,customerId,"", 0.0, 0.0, 0, tableNo);
+				generatedOrderId = DBNinja.addOrder(o);
+			} catch (Exception e) {
+				System.out.println(INVALID_INPUT);
+				return;
+			}
+		} else if (orderType == 2) {
+			PickupOrder o = new PickupOrder(-1, customerId, "", 0.0, 0.0, 1, 0);
+			generatedOrderId = DBNinja.addOrder(o);
+		} else {
+			System.out.println("Enter address? (street, city, state, zipcode)");
+			String address = br.readLine();
+			try {
+				String[] arr = address.split(",");
+				if (arr.length !=4)
+					throw new Exception();
+				Integer.parseInt(arr[3].trim());
+			} catch (Exception e) {
+				System.out.println(INVALID_INPUT);
+				return;
+			}
+			DeliveryOrder o = new DeliveryOrder(-1, customerId, "", 0.0, 0.0, 0, address);
+			generatedOrderId = DBNinja.addOrder(o);
+		}
 
+		System.out.println("GID"+generatedOrderId);
+//		String morePizzaChoice = "";
+//		do {
+//			buildPizza(generatedOrderId);
+//
+//		} while (morePizzaChoice.equalsIgnoreCase("y"));
+
+		System.out.print("Are there any discounts on this order? (y/n): ");
+		String discountChoice = br.readLine();
+		if (discountChoice.equalsIgnoreCase("y")) {
+			ArrayList<Discount> discountList = DBNinja.getDiscountList();
+			ArrayList<Discount> appliedDiscount = new ArrayList<Discount>();
+			int discountId = -1;
+			do {
+				System.out.println("Showing discount list...");
+				for (Discount d: discountList)
+					System.out.println(d);
+				System.out.print("Enter discount id? (-1 to stop): ");
+				discountId = Integer.parseInt(br.readLine());
+				if (discountId != -1) {
+					appliedDiscount.add(getDiscountById(discountId, discountList));
+				}
+			} while(discountId != -1);
+			DBNinja.addDiscountsToOrder(generatedOrderId, appliedDiscount);
+		}
 
 		System.out.println("Finished adding order...Returning to menu...");
 	}
@@ -132,7 +231,7 @@ public class Menu {
 
 
 	// Enter a new customer in the database
-	public static void EnterCustomer() throws SQLException, IOException {
+	public static int EnterCustomer() throws SQLException, IOException {
 		/*
 		 * Ask what the name of the customer is. YOU MUST TELL ME (the grader) HOW TO FORMAT THE FIRST NAME, LAST NAME, AND PHONE NUMBER.
 		 * If you ask for first and last name one at a time, tell me to insert First name <enter> Last Name (or separate them by different print statements)
@@ -158,10 +257,10 @@ public class Menu {
 				throw new Exception();
 		} catch (Exception e) {
 			System.out.println(INVALID_INPUT);
-			return;
+			return -1;
 		}
 		Customer customer = new Customer(0, fName, lName, phone);
-		DBNinja.addCustomer(customer);
+		return DBNinja.addCustomer(customer);
 	}
 
 	// View any orders that are not marked as completed
@@ -329,11 +428,99 @@ public class Menu {
 		 * 
 		 * Once the discounts are added, we can return the pizza
 		 */
-		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-		Pizza ret = null;
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		Pizza createdPizza = new Pizza(-1, "", "", orderID, "preparing", "", 0, 0);
+		String choice = "1 - " + DBNinja.size_s + "\n" +
+				"2 - " + DBNinja.size_m + "\n" +
+				"3 - " + DBNinja.size_l + "\n" +
+				"4 - " + DBNinja.size_xl + "\n";
+		System.out.print(choice);
+		System.out.print("Enter pizza size? : ");
+		try {
+			int size = Integer.parseInt(br.readLine());
+			if (size == 1) createdPizza.setSize(DBNinja.size_s);
+			else if (size == 2) createdPizza.setSize(DBNinja.size_m);
+			else if (size == 3) createdPizza.setSize(DBNinja.size_l);
+			else if (size == 4) createdPizza.setSize(DBNinja.size_xl);
+			else throw new Exception();
+		} catch (Exception e) {
+			System.out.println(INVALID_INPUT);
+			return null;
+		}
+		choice = "1 - " + DBNinja.crust_orig + "\n" +
+				"2 - " + DBNinja.crust_pan + "\n" +
+				"3 - " + DBNinja.crust_thin + "\n" +
+				"4 - " + DBNinja.crust_gf + "\n";
+		try {
+			int size = Integer.parseInt(br.readLine());
+			if (size == 1) createdPizza.setCrustType(DBNinja.crust_orig);
+			else if (size == 2) createdPizza.setCrustType(DBNinja.crust_pan);
+			else if (size == 3) createdPizza.setCrustType(DBNinja.crust_thin);
+			else if (size == 4) createdPizza.setCrustType(DBNinja.crust_gf);
+			else throw new Exception();
+		} catch (Exception e) {
+			System.out.println(INVALID_INPUT);
+			return null;
+		}
+		ArrayList<Topping> inventoryToppingList = DBNinja.getInventory();
+		ArrayList<Topping> pizzaToppingList = new ArrayList<Topping>();
+		int toppingChoice = 0;
+		do {
+			System.out.println("Showing current toppings...");
+			System.out.printf("%4s%20s%8s", "ID", "Name", "CurrINV");
+			for (Topping t: inventoryToppingList) {
+				System.out.printf("%4d%20s%8d", t.getTopID(), t.getTopName(), t.getCurINVT());
+			}
+			System.out.print("Enter topping id? (-1 to stop): ");
+			toppingChoice = Integer.parseInt(br.readLine());
+			if (toppingChoice != -1) {
+				pizzaToppingList.add(getToppingById(toppingChoice, inventoryToppingList));
+				System.out.print("Extra topping? (y/n): ");
+				String eTChoice = br.readLine();
+				if (eTChoice.equalsIgnoreCase("y")) {
+					int idx = getTopIndexFromList(toppingChoice, inventoryToppingList);
+					createdPizza.modifyDoubledArray(idx, true);
+				}
+			}
+		} while(toppingChoice != -1);
+		createdPizza.setToppings(pizzaToppingList);
+		System.out.print("Are there any discounts on this pizza? (y/n): ");
+		String discountChoice = br.readLine();
+		if (discountChoice.equalsIgnoreCase("y")) {
+			ArrayList<Discount> discountList = DBNinja.getDiscountList();
+			ArrayList<Discount> appliedDiscount = new ArrayList<Discount>();
+			int discountId = -1;
+			do {
+				System.out.println("Showing discount list...");
+				for (Discount d: discountList)
+					System.out.println(d);
+				System.out.print("Enter discount id? (-1 to stop): ");
+				discountId = Integer.parseInt(br.readLine());
+				if (discountId != -1) {
+					appliedDiscount.add(getDiscountById(discountId, discountList));
+				}
+			} while(discountId != -1);
+			createdPizza.setDiscounts(appliedDiscount);
+		}
 
 
-		return ret;
+		return createdPizza;
+	}
+
+	private static Discount getDiscountById(int discountId, ArrayList<Discount> dList) {
+		for (Discount d: dList) {
+			if (d.getDiscountID() == discountId)
+				return d;
+		}
+		return null;
+	}
+
+	private static Topping getToppingById(int TopID, ArrayList<Topping> tops) {
+		for (Topping t: tops) {
+			if (t.getTopID() == TopID)
+				return t;
+		}
+		return null;
 	}
 
 	private static int getTopIndexFromList(int TopID, ArrayList<Topping> tops) {

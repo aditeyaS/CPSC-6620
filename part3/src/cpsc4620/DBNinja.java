@@ -56,17 +56,88 @@ public final class DBNinja {
 
 	}
 
-
-	public static void addOrder(Order o) throws SQLException, IOException {
+	public static int addOrder(Order o) throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * add code to add the order to the DB. Remember that we're not just
 		 * adding the order to the order DB table, but we're also recording
 		 * the necessary data for the delivery, dinein, and pickup tables
 		 */
+		int generatedOrderId = -1;
+		String query = "INSERT INTO orders(OrderType, OrderTime, OrderSP, OrderCP, OrderCustomerID) VALUES (?, ?, ?, ?, ?)";
+		PreparedStatement pStmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+		pStmt.setString(1, o.getOrderType());
+		pStmt.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
+		pStmt.setDouble(3, o.getCustPrice());
+		pStmt.setDouble(4, o.getBusPrice());
+		pStmt.setInt(5, o.getCustID());
 
+		try {
+			if (pStmt.executeUpdate() != 0) {
+				ResultSet generatedKey = pStmt.getGeneratedKeys();
+				if (generatedKey.next())
+					generatedOrderId = generatedKey.getInt(1);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		if (o instanceof DineinOrder) {
+			DineinOrder dineinO = (DineinOrder)o;
+			query = "INSERT INTO dinein(DineinOrderID, DineinSeat) VALUES (?, ?)";
+			pStmt = conn.prepareStatement(query);
+			pStmt.setInt(1, generatedOrderId);
+			pStmt.setInt(2, dineinO.getTableNum());
+		} else if (o instanceof DeliveryOrder) {
+			DeliveryOrder deliveryO = (DeliveryOrder)o;
+			query = "INSERT INTO delivery(DeliveryOrderID, DeliveryAddress, DeliveryCity, DeliveryState, DeliveryZipCode) VALUES(?, ?, ?, ?, ?)";
+			pStmt = conn.prepareStatement(query);
+			String[] address = deliveryO.getAddress().split(",");
+			pStmt.setInt(1, generatedOrderId);
+			pStmt.setString(2, address[0].trim());
+			pStmt.setString(3, address[1].trim());
+			pStmt.setString(4, address[2].trim());
+			pStmt.setInt(5, Integer.parseInt(address[3].trim()));
+		} else {
+			PickupOrder pickupO = (PickupOrder)o;
+			query = "INSERT INTO pickup(PickupOrderID) VALUES(?)";
+			pStmt = conn.prepareStatement(query);
+			pStmt.setInt(1, generatedOrderId);
+		}
+		try {
+			pStmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		conn.close();
+		return generatedOrderId;
+	}
+
+	public static void addDiscountsToOrder (int orderId, ArrayList<Discount> discountList) throws SQLException, IOException {
+		connect_to_db();
+		String query = "INSERT INTO order_discount(OrderDiscountOrderID, OrderDiscountDiscountID) VALUES(?, ?)";
+		PreparedStatement pStmt = conn.prepareStatement(query);
+		pStmt.setInt(1, orderId);
+		for (Discount d: discountList) {
+			pStmt.setInt(2, d.getDiscountID());
+			try {
+				pStmt.executeUpdate();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		pStmt.close();
+		conn.close();
+	}
+
+	public static void updateOrderPrice(int orderId) {
+
+	}
+
+	public static void updatePizzaPrice(int pizzaId) {
+
 	}
 
 	public static void addPizza(Pizza p) throws SQLException, IOException {
@@ -132,16 +203,17 @@ public final class DBNinja {
 		 */
 
 
+
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 	}
 
 
-	public static void addCustomer(Customer c) throws SQLException, IOException {
+	public static int addCustomer(Customer c) throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * This should add a customer to the database
 		 */
-
+		int insertedCustomerId = -1;
 		String query = "SELECT * FROM customer WHERE CustomerFName=? AND CustomerLName=? AND CustomerPhone=?";
 		PreparedStatement pS = conn.prepareStatement(query);
 		pS.setString(1, c.getFName());
@@ -157,13 +229,16 @@ public final class DBNinja {
 			System.out.println("Customer already exists. Returning to main menu...");
 		} else {
 			query = "INSERT INTO customer(CustomerFName, CustomerLName, CustomerPhone) VALUES(?, ?, ?)";
-			PreparedStatement ps = conn.prepareStatement(query);
+			PreparedStatement ps = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
 			ps.setString(1, c.getFName());
 			ps.setString(2, c.getLName());
 			ps.setString(3, c.getPhone());
 			try {
-				ps.executeUpdate();
-				System.out.println("Customer added. Returning to main menu...");
+				if (ps.executeUpdate() != 0) {
+					ResultSet generatedKey = ps.getGeneratedKeys();
+					if (generatedKey.next())
+						insertedCustomerId = generatedKey.getInt(1);
+				}
 				ps.close();
 			} catch (Exception e) {
 				ps.close();
@@ -173,8 +248,8 @@ public final class DBNinja {
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 		pS.close();
 		conn.close();
+		return insertedCustomerId;
 	}
-
 
 	public static void CompleteOrder(Order o) throws SQLException, IOException {
 		connect_to_db();
@@ -441,9 +516,23 @@ public final class DBNinja {
 		ArrayList<Discount> discs = new ArrayList<Discount>();
 		connect_to_db();
 		//returns a list of all the discounts.
-
-
+		String query = "SELECT * FROM discount ORDER BY DiscountName";
+		Statement stmt = conn.createStatement();
+		try (ResultSet rSet = stmt.executeQuery(query)) {
+			while (rSet.next()) {
+				int id = rSet.getInt("DiscountId");
+				String name = rSet.getString("DiscountName");
+				double percent = rSet.getDouble("DiscountPercentage");
+				double amount = rSet.getDouble("DiscountAmount");
+				boolean isPercent = amount == 0;
+				discs.add(new Discount(id, name, isPercent ? percent : amount, isPercent));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		stmt.close();
+		conn.close();
 		return discs;
 	}
 
