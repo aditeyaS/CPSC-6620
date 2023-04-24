@@ -56,7 +56,7 @@ public final class DBNinja {
 
 	}
 
-	public static int addOrder(Order o) throws SQLException, IOException {
+	public static void addOrder(Order o) throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * add code to add the order to the DB. Remember that we're not just
@@ -64,6 +64,8 @@ public final class DBNinja {
 		 * the necessary data for the delivery, dinein, and pickup tables
 		 */
 		int generatedOrderId = -1;
+
+		// adding to orders table
 		String query = "INSERT INTO orders(OrderType, OrderTime, OrderSP, OrderCP, OrderCustomerID) VALUES (?, ?, ?, ?, ?)";
 		PreparedStatement pStmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
 		pStmt.setString(1, o.getOrderType());
@@ -81,14 +83,16 @@ public final class DBNinja {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		o.setOrderID(generatedOrderId);
 
-		if (o instanceof DineinOrder) {
+		// adding to order type table
+		if (o instanceof DineinOrder) { // dinein
 			DineinOrder dineinO = (DineinOrder)o;
 			query = "INSERT INTO dinein(DineinOrderID, DineinSeat) VALUES (?, ?)";
 			pStmt = conn.prepareStatement(query);
 			pStmt.setInt(1, generatedOrderId);
 			pStmt.setInt(2, dineinO.getTableNum());
-		} else if (o instanceof DeliveryOrder) {
+		} else if (o instanceof DeliveryOrder) { // delivery
 			DeliveryOrder deliveryO = (DeliveryOrder)o;
 			query = "INSERT INTO delivery(DeliveryOrderID, DeliveryAddress, DeliveryCity, DeliveryState, DeliveryZipCode) VALUES(?, ?, ?, ?, ?)";
 			pStmt = conn.prepareStatement(query);
@@ -98,7 +102,7 @@ public final class DBNinja {
 			pStmt.setString(3, address[1].trim());
 			pStmt.setString(4, address[2].trim());
 			pStmt.setInt(5, Integer.parseInt(address[3].trim()));
-		} else {
+		} else { // pickup
 			PickupOrder pickupO = (PickupOrder)o;
 			query = "INSERT INTO pickup(PickupOrderID) VALUES(?)";
 			pStmt = conn.prepareStatement(query);
@@ -110,34 +114,21 @@ public final class DBNinja {
 			e.printStackTrace();
 		}
 
-		//DO NOT FORGET TO CLOSE YOUR CONNECTION
-		conn.close();
-		return generatedOrderId;
-	}
 
-	public static void addDiscountsToOrder (int orderId, ArrayList<Discount> discountList) throws SQLException, IOException {
-		connect_to_db();
-		String query = "INSERT INTO order_discount(OrderDiscountOrderID, OrderDiscountDiscountID) VALUES(?, ?)";
-		PreparedStatement pStmt = conn.prepareStatement(query);
-		pStmt.setInt(1, orderId);
-		for (Discount d: discountList) {
-			pStmt.setInt(2, d.getDiscountID());
-			try {
-				pStmt.executeUpdate();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+		// adding pizza
+		for (Pizza p: o.getPizzaList()) {
+			p.setOrderID(generatedOrderId);
+			addPizza(p);
 		}
+
+		// adding order discount
+		for (Discount d: o.getDiscountList()) {
+			useOrderDiscount(o, d);
+		}
+
+		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 		pStmt.close();
 		conn.close();
-	}
-
-	public static void updateOrderPrice(int orderId) {
-
-	}
-
-	public static void updatePizzaPrice(int pizzaId) {
-
 	}
 
 	public static void addPizza(Pizza p) throws SQLException, IOException {
@@ -148,10 +139,44 @@ public final class DBNinja {
 		 * instance of topping usage to that bridge table if you have't accounted
 		 * for that somewhere else.
 		 */
+		int generatedPizzaId = -1;
+		// adding to pizza table
+		String query = "INSERT INTO pizza(PizzaBaseSize, PizzaBaseCrust, PizzaState, PizzaSP, PizzaCP, PizzaOrderID) VALUES (?,?,?,?,?,?)";
+		PreparedStatement pStmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+		pStmt.setString(1, p.getSize());
+		pStmt.setString(2, p.getCrustType());
+		pStmt.setString(3, p.getPizzaState());
+		pStmt.setDouble(4, p.getCustPrice());
+		pStmt.setDouble(5, p.getBusPrice());
+		pStmt.setInt(6, p.getOrderID());
+		try {
+			if (pStmt.executeUpdate() != 0) {
+				ResultSet generatedKey = pStmt.getGeneratedKeys();
+				if (generatedKey.next())
+					generatedPizzaId = generatedKey.getInt(1);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return;
+		}
+		p.setPizzaID(generatedPizzaId);
 
+		// adding to pizza_topping bridge table and updating inventory
+		for (int i = 0; i<p.getToppings().size(); i++) {
+			boolean isDoubled = p.getIsDoubleArray()[i];
+			useTopping(p, p.getToppings().get(i), isDoubled);
+		}
+
+		// adding to pizza_discount table
+		for (Discount d: p.getDiscounts()) {
+			usePizzaDiscount(p, d);
+		}
 
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		pStmt.close();
+		conn.close();
 	}
+
 
 	public static int getMaxPizzaID() throws SQLException, IOException {
 		connect_to_db();
@@ -168,7 +193,6 @@ public final class DBNinja {
 
 	public static void useTopping(Pizza p, Topping t, boolean isDoubled) throws SQLException, IOException //this function will update toppings inventory in SQL and add entities to the Pizzatops table. Pass in the p pizza that is using t topping
 	{
-		connect_to_db();
 		/*
 		 * This function should 2 two things.
 		 * We need to update the topping inventory every time we use t topping (accounting for extra toppings as well)
@@ -176,9 +200,35 @@ public final class DBNinja {
 		 * Ideally, you should't let toppings go negative. If someone tries to use toppings that you don't have, just print
 		 * that you've run out of that topping.
 		 */
+		double toppingUsed = 0.0;
+		if (p.getSize().equals(size_s))
+			toppingUsed = t.getPerAMT();
+		else if (p.getSize().equals(size_m))
+			toppingUsed = t.getMedAMT();
+		else if (p.getSize().equals(size_l))
+			toppingUsed = t.getLgAMT();
+		else
+			toppingUsed = t.getXLAMT();
 
+		if (isDoubled) toppingUsed *= 2;
+		// updating topping inventory
+		AddToInventory(t, toppingUsed * -1.0);
 
+		// adding to pizza_topping bridge table
+		connect_to_db();
+		String bridgeQuery = "INSERT INTO pizza_topping(PizzaToppingPizzaID, PizzaToppingToppingID, PizzaToppingCount) VALUES (?, ?, ?)";
+		PreparedStatement pStmt = conn.prepareStatement(bridgeQuery);
+		pStmt.setInt(1, p.getPizzaID());
+		pStmt.setInt(2, t.getTopID());
+		pStmt.setInt(3, isDoubled ? 2 : 1);
+		try {
+			pStmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		pStmt.close();
+		conn.close();
 	}
 
 
@@ -189,9 +239,18 @@ public final class DBNinja {
 		 * You might use this, you might not depending on where / how to want to update
 		 * this table
 		 */
-
-
+		String bridgeQuery = "INSERT INTO pizza_discount(PizzaDiscountPizzaID, PizzaDiscountDiscountID) VALUES (?, ?)";
+		PreparedStatement pStmt = conn.prepareStatement(bridgeQuery);
+		pStmt.setInt(1, p.getPizzaID());
+		pStmt.setInt(2, d.getDiscountID());
+		try {
+			pStmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		pStmt.close();
+		conn.close();
 	}
 
 	public static void useOrderDiscount(Order o, Discount d) throws SQLException, IOException {
@@ -201,47 +260,58 @@ public final class DBNinja {
 		 * You might use this, you might not depending on where / how to want to update
 		 * this table
 		 */
-
-
-
+		String bridgeQuery = "INSERT INTO order_discount(OrderDiscountOrderID, OrderDiscountDiscountID) VALUES(?, ?)";
+		PreparedStatement pStmt = conn.prepareStatement(bridgeQuery);
+		pStmt.setInt(1, o.getOrderID());
+		pStmt.setInt(2, d.getDiscountID());
+		try {
+			pStmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		pStmt.close();
+		conn.close();
 	}
 
 
 	public static int addCustomer(Customer c) throws SQLException, IOException {
 		connect_to_db();
+		// if customer already exists it returns it's id (negative)
+		// else it returns the newly generated id
 		/*
 		 * This should add a customer to the database
 		 */
 		int insertedCustomerId = -1;
-		String query = "SELECT * FROM customer WHERE CustomerFName=? AND CustomerLName=? AND CustomerPhone=?";
-		PreparedStatement pS = conn.prepareStatement(query);
+		String checkCustomerExistQuery = "SELECT CustomerID FROM customer WHERE CustomerFName=? AND CustomerLName=? AND CustomerPhone=?";
+		PreparedStatement pS = conn.prepareStatement(checkCustomerExistQuery);
 		pS.setString(1, c.getFName());
 		pS.setString(2, c.getLName());
 		pS.setString(3, c.getPhone());
 		boolean customerExists = false;
 		try (ResultSet rSet = pS.executeQuery()) {
-			customerExists = rSet.next();
+			if (rSet.next()) {
+				customerExists = true;
+				insertedCustomerId = rSet.getInt(1);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		if (customerExists) {
-			System.out.println("Customer already exists. Returning to main menu...");
+			insertedCustomerId *= -1;
 		} else {
-			query = "INSERT INTO customer(CustomerFName, CustomerLName, CustomerPhone) VALUES(?, ?, ?)";
-			PreparedStatement ps = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-			ps.setString(1, c.getFName());
-			ps.setString(2, c.getLName());
-			ps.setString(3, c.getPhone());
+			String insertCustomerQuery = "INSERT INTO customer(CustomerFName, CustomerLName, CustomerPhone) VALUES(?, ?, ?)";
+			pS = conn.prepareStatement(insertCustomerQuery, Statement.RETURN_GENERATED_KEYS);
+			pS.setString(1, c.getFName());
+			pS.setString(2, c.getLName());
+			pS.setString(3, c.getPhone());
 			try {
-				if (ps.executeUpdate() != 0) {
-					ResultSet generatedKey = ps.getGeneratedKeys();
+				if (pS.executeUpdate() != 0) {
+					ResultSet generatedKey = pS.getGeneratedKeys();
 					if (generatedKey.next())
 						insertedCustomerId = generatedKey.getInt(1);
 				}
-				ps.close();
 			} catch (Exception e) {
-				ps.close();
 				e.printStackTrace();
 			}
 		}
@@ -257,9 +327,18 @@ public final class DBNinja {
 		 * add code to mark an order as complete in the DB. You may have a boolean field
 		 * for this, or maybe a completed time timestamp. However you have it.
 		 */
-
-
+		String updateQuery = "UPDATE pizza SET PizzaState = ? WHERE PizzaOrderID = ?";
+		PreparedStatement pStmt = conn.prepareStatement(updateQuery);
+		pStmt.setString(1, "completed");
+		pStmt.setInt(2, o.getOrderID());
+		try {
+			pStmt.executeUpdate();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		pStmt.close();
+		conn.close();
 	}
 
 
@@ -308,9 +387,9 @@ public final class DBNinja {
 		 * plan on using a printInventory function
 		 */
 		ArrayList<Topping> toppingList = new ArrayList<Topping>();
-		String query = "SELECT * FROM topping ORDER BY ToppingName";
+		String selectToppingsQuery = "SELECT * FROM topping ORDER BY ToppingName";
 		Statement stmt = conn.createStatement();
-		try (ResultSet rSet = stmt.executeQuery(query)) {
+		try (ResultSet rSet = stmt.executeQuery(selectToppingsQuery)) {
 			while (rSet.next()) {
 				int id = rSet.getInt("ToppingID");
 				String name = rSet.getString("ToppingName");
@@ -330,7 +409,6 @@ public final class DBNinja {
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 		stmt.close();
 		conn.close();
-		//toppingList.sort(Comparator.comparing(Topping::getTopName));
 		return toppingList;
 	}
 
@@ -468,6 +546,25 @@ public final class DBNinja {
 		return Integer.parseInt(date.substring(8, 10));
 	}
 
+	public static double[] getSPCPCrust(String size, String crust) throws SQLException, IOException {
+		connect_to_db();
+		double[] price = new double[2];
+		String query = "SELECT BaseSP, BaseCP FROM base WHERE BaseSize = ? AND BaseCrust = ?";
+		PreparedStatement pStmt = conn.prepareStatement(query);
+		pStmt.setString(1, size);
+		pStmt.setString(2, crust);
+		try (ResultSet rSet = pStmt.executeQuery()) {
+			if (rSet.next()) {
+				price[0] = rSet.getDouble("BaseSP");
+				price[1] = rSet.getDouble("BaseCP");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		pStmt.close();
+		conn.close();
+		return price;
+	}
 
 	public static double getBaseCustPrice(String size, String crust) throws SQLException, IOException {
 		connect_to_db();
@@ -538,13 +635,13 @@ public final class DBNinja {
 
 
 	public static ArrayList<Customer> getCustomerList() throws SQLException, IOException {
-		ArrayList<Customer> customerList = new ArrayList<Customer>();
 		connect_to_db();
 		/*
 		 * return an arrayList of all the customers. These customers should
 		 *print in alphabetical order, so account for that as you see fit.
 		*/
 		String query = "SELECT * FROM customer ORDER BY CustomerFName, CustomerLName";
+		ArrayList<Customer> customerList = new ArrayList<Customer>();
 		Statement stmt = conn.createStatement();
 		try (ResultSet rSet = stmt.executeQuery(query)) {
 			while (rSet.next()) {

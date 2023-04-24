@@ -42,7 +42,8 @@ SELECT
     OrderType 'CustomerType',
     DATE_FORMAT(MAX(OrderTime), "%Y-%M") 'OrderMonth',
     SUM(OrderSP) 'TotalOrderPrice',
-    SUM(OrderCP) 'TotalOrderCost'
+    SUM(OrderCP) 'TotalOrderCost',
+    SUM(OrderSP) - SUM(OrderCP) 'Profit'
 FROM orders
 GROUP BY DATE_FORMAT(OrderTime,'%Y-%M'), OrderType
 UNION
@@ -50,7 +51,8 @@ SELECT
 	'',
     'Grand Total',
     SUM(OrderSP),
-    SUM(OrderCP)
+    SUM(OrderCP),
+    SUM(OrderSP) - SUM(OrderCP)
 FROM orders
 ORDER BY OrderMonth;
 
