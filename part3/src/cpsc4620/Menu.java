@@ -3,14 +3,12 @@ package cpsc4620;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.rmi.server.ExportException;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
-import java.util.List;
 import init.DBIniter;
 
 /*
@@ -129,10 +127,21 @@ public class Menu {
 		int customerId = -1;
 		if (existingCustomerChoice.equalsIgnoreCase("y")) {
 			System.out.println("Here's a list of customers:");
-			viewCustomers();
+			ArrayList<Customer> customerList = DBNinja.getCustomerList();
+			for (Customer c: customerList)
+				System.out.println(c.toString());
 			System.out.print("Enter customer id?: ");
 			try {
 				customerId = Integer.parseInt(br.readLine());
+				boolean customerFound = false;
+				for (Customer c: customerList) {
+					if (c.getCustID() == customerId) {
+						customerFound = true;
+						break;
+					}
+				}
+				if (!customerFound)
+					throw new Exception();
 			} catch (Exception e) {
 				System.out.println(INVALID_INPUT);
 				return;
@@ -174,7 +183,7 @@ public class Menu {
 				return;
 			}
 		} else if (orderType == 2) { // pick up
-			createdOrder = new PickupOrder(-1, customerId, "", 0.0, 0.0, 1, 0);
+			createdOrder = new PickupOrder(-1, customerId, "", 0.0, 0.0, 0, 0);
 		} else { // delivery
 			System.out.println("Enter address? (street, city, state, zipcode)");
 			String address = br.readLine();
@@ -203,6 +212,10 @@ public class Menu {
 			System.out.print("Do you want to add more pizzas? (y/n): ");
 			morePizzaChoice = br.readLine();
 		} while (morePizzaChoice.equalsIgnoreCase("y"));
+		createdOrder.setCustPrice(orderSP);
+		createdOrder.setBusPrice(orderCP);
+		createdOrder.setPizzaList(createdPizzaList);
+
 
 		// adding discounts to order
 		System.out.print("Are there any discounts on this order? (y/n): ");
@@ -215,7 +228,22 @@ public class Menu {
 				for (Discount d: discountList)
 					System.out.println(d);
 				System.out.print("Enter discount id? (-1 to stop): ");
-				discountId = Integer.parseInt(br.readLine());
+				try {
+					discountId = Integer.parseInt(br.readLine());
+					boolean isDiscountPresent = false;
+					for (Discount d: discountList) {
+						if(d.getDiscountID() == discountId) {
+							isDiscountPresent = true;
+							break;
+						}
+					}
+					if (!isDiscountPresent) {
+						System.out.println("INVALID DISCOUNT ID");
+					}
+				} catch (Exception e) {
+					System.out.println(INVALID_INPUT);
+					return;
+				}
 				if (discountId != -1) {
 					createdOrder.addDiscount(getDiscountById(discountId, discountList));
 				}
@@ -223,7 +251,8 @@ public class Menu {
 		}
 		// adding order to db
 		DBNinja.addOrder(createdOrder);
-		System.out.println("Finished adding order...Returning to menu...");
+		System.out.println("Finished sent to kitchen. CustomerTotal: " + createdOrder.getCustPrice());
+		System.out.println("Returning to main menu...");
 	}
 
 
@@ -337,6 +366,7 @@ public class Menu {
 				System.out.println(order.toSimplePrint());
 		} else {
 			System.out.println("There are no orders");
+			return;
 		}
 		System.out.println("Which order would you like to see in detail?");
 		System.out.print("Enter order id: ");
@@ -380,9 +410,39 @@ public class Menu {
 		 * and allow the user to choose which of the incomplete orders they wish to mark as complete
 		 * 
 		 */
-
-
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		ArrayList<Order> orderList = DBNinja.getCurrentOrders();
+		orderList.removeIf(order -> order.getIsComplete() == 1);
+		if (orderList.isEmpty()) {
+			System.out.println("All orders are complete. Returning to main menu...");
+			return;
+		} else {
+			System.out.println("Displaying all incomplete orders");
+		}
+		for (Order o: orderList) {
+			System.out.println(o.toSimplePrint());
+		}
+		System.out.print("Enter order id to mark it as complete: ");
+		int orderId = -1;
+		try {
+			orderId = Integer.parseInt(br.readLine());
+			boolean isIdPresent = false;
+			for (Order o: orderList) {
+				if (o.getOrderID() == orderId) {
+					isIdPresent = true;
+					break;
+				}
+			}
+			if (!isIdPresent) throw new Exception();
+		} catch (Exception e) {
+			System.out.println(INVALID_INPUT);
+			return;
+		}
+		DBNinja.CompleteOrder(orderId);
+		System.out.println("Order completed. Returning to main menu...");
 	}
+
+
 
 	// See the list of inventory and it's current level
 	public static void ViewInventoryLevels() throws SQLException, IOException {
@@ -454,7 +514,7 @@ public class Menu {
 		 * Once the discounts are added, we can return the pizza
 		 */
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		Pizza createdPizza = new Pizza(-1, "", "", -1, "preparing", "", 0, 0);
+		Pizza createdPizza = new Pizza(-1, "", "", -1, DBNinja.state_preparing, "", 0, 0);
 
 		// pizza size
 		String choice = "1 - " + DBNinja.size_s + "\n" +
@@ -498,6 +558,7 @@ public class Menu {
 		double[] crustSPCP = DBNinja.getSPCPCrust(createdPizza.getSize(), createdPizza.getCrustType());
 		createdPizza.setCustPrice(crustSPCP[0]);
 		createdPizza.setBusPrice(crustSPCP[1]);
+		System.out.println("CrustSP=" +crustSPCP[0]);
 
 		// adding topping
 		ArrayList<Topping> inventoryToppingList = DBNinja.getInventory();
@@ -528,6 +589,7 @@ public class Menu {
 		// adding discounts
 		System.out.print("Are there any discounts on this pizza? (y/n): ");
 		String discountChoice = br.readLine();
+		ArrayList<Discount> addedDiscountList = new ArrayList<Discount>();
 		if (discountChoice.equalsIgnoreCase("y")) {
 			ArrayList<Discount> discountList = DBNinja.getDiscountList();
 			int discountId = -1;
@@ -538,11 +600,26 @@ public class Menu {
 				System.out.print("Enter discount id? (-1 to stop): ");
 				discountId = Integer.parseInt(br.readLine());
 				if (discountId != -1) {
-					createdPizza.addDiscounts(getDiscountById(discountId, discountList));
+					addedDiscountList.add(getDiscountById(discountId, discountList));
+//					createdPizza.addDiscounts(getDiscountById(discountId, discountList));
 				}
 			} while(discountId != -1);
 		}
-		// returning the created pizza
+		// subtracting discount
+		double pizzaSP = createdPizza.getCustPrice();
+
+		// I don't think Pizza.addDiscount() works correct in case of percentage - makes the amount CusPrice negative
+		// as it's not divided by 100 like in Order.addDiscount()
+		for (Discount d: addedDiscountList) {
+			if (d.isPercent()) {
+				pizzaSP = pizzaSP * (1 - d.getAmount()/100.0);
+			} else {
+				pizzaSP -= d.getAmount();
+			}
+		}
+		createdPizza.setCustPrice(pizzaSP);
+		inventoryToppingList.clear();
+		addedDiscountList.clear();
 		return createdPizza;
 	}
 

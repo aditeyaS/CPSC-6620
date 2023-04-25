@@ -3,7 +3,6 @@ package cpsc4620;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
-import java.util.Date;
 
 /*
  * This file is where most of your code changes will occur You will write the code to retrieve
@@ -41,6 +40,9 @@ public final class DBNinja {
 	public final static String crust_orig = "Original";
 	public final static String crust_pan = "Pan";
 	public final static String crust_gf = "Gluten-Free";
+
+	public final static String state_completed = "completed";
+	public final static String state_preparing = "state_preparing";
 
 
 	private static boolean connect_to_db() throws SQLException, IOException {
@@ -161,7 +163,7 @@ public final class DBNinja {
 		}
 		p.setPizzaID(generatedPizzaId);
 
-		// adding to pizza_topping bridge table and updating inventory
+		// adding to pizza_topping (bridge) table and updating inventory
 		for (int i = 0; i<p.getToppings().size(); i++) {
 			boolean isDoubled = p.getIsDoubleArray()[i];
 			useTopping(p, p.getToppings().get(i), isDoubled);
@@ -321,7 +323,7 @@ public final class DBNinja {
 		return insertedCustomerId;
 	}
 
-	public static void CompleteOrder(Order o) throws SQLException, IOException {
+	public static void CompleteOrder(int orderId) throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * add code to mark an order as complete in the DB. You may have a boolean field
@@ -329,8 +331,8 @@ public final class DBNinja {
 		 */
 		String updateQuery = "UPDATE pizza SET PizzaState = ? WHERE PizzaOrderID = ?";
 		PreparedStatement pStmt = conn.prepareStatement(updateQuery);
-		pStmt.setString(1, "completed");
-		pStmt.setInt(2, o.getOrderID());
+		pStmt.setString(1, state_completed);
+		pStmt.setInt(2, orderId);
 		try {
 			pStmt.executeUpdate();
 		} catch (Exception e) {
@@ -436,18 +438,19 @@ public final class DBNinja {
 				double cp = rSet.getDouble("OrderCP");
 				int cId = rSet.getInt("OrderCustomerID");
 				int isComplete = isOrderComplete(id);
+				Order order;
 				if (type.equals(pickup)) {
-					PickupOrder o = new PickupOrder(id, cId, date, sp, cp, isComplete, isComplete);
-					orderList.add(o);
+					// ASSUMPTION: Pickup order is picked up if it is completed
+					order = new PickupOrder(id, cId, date, sp, cp, isComplete, isComplete);
 				} else if (type.equals(dine_in)) {
 					int tablenum = getTableNumber(id);
-					DineinOrder o = new DineinOrder(id, cId, date, sp, cp, isComplete, tablenum);
-					orderList.add(o);
+					order = new DineinOrder(id, cId, date, sp, cp, isComplete, tablenum);
 				} else {
 					String address = getDeliveryAddress(id);
-					DeliveryOrder o = new DeliveryOrder(id, cId, date, sp, cp, isComplete, address);
-					orderList.add(o);
+					order = new DeliveryOrder(id, cId, date, sp, cp, isComplete, address);
 				}
+				orderList.add(order);
+
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -457,20 +460,32 @@ public final class DBNinja {
 		return orderList;
 	}
 
-	private static int isOrderComplete (int orderId) throws SQLException {
+	private static int isOrderComplete (int orderId) throws SQLException, IOException {
 		/*Adi
 		* Checks if an order is complete because i have taken complete in the pizza table
 		*/
-		return 1;
+		connect_to_db();
+		int isComplete = 0;
+		String query = "SELECT PizzaState FROM pizza WHERE PizzaOrderID = " + orderId;
+		Statement stmt = conn.createStatement();
+		try (ResultSet rSet = stmt.executeQuery(query)) {
+			if (rSet.next()) {
+				if (rSet.getString(1).equalsIgnoreCase(state_completed))
+					isComplete = 1;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return isComplete;
 	}
 
-	private static int getTableNumber (int orderId) throws SQLException {
-		/*Adi
-		 * 	Used in the getCurrentOrders()
-		 * Don't need to open/close connection as it's happening in above function
+	private static int getTableNumber (int orderId) throws SQLException, IOException {
+		/*
+		 * 	returns the table number of a dine in order
 		 */
+		connect_to_db();
 		int tableNumber = -1;
-		String query = "SELECT * FROM dinein WHERE DineinOrderID = ?";
+		String query = "SELECT DineinSeat FROM dinein WHERE DineinOrderID = ?";
 		PreparedStatement pStmt = conn.prepareStatement(query);
 		pStmt.setInt(1, orderId);
 		try (ResultSet rSet = pStmt.executeQuery()) {
@@ -479,14 +494,15 @@ public final class DBNinja {
 			e.printStackTrace();
 		}
 		pStmt.close();
+		conn.close();
 		return tableNumber;
 	}
 
-	private static String getDeliveryAddress(int orderId) throws SQLException {
-		/*Adi
-		 * Used in the getCurrentOrders()
-		 * Don't need to open/close connection as it's happening in above function
+	private static String getDeliveryAddress(int orderId) throws SQLException, IOException {
+		/*
+		 * returns address of a delivery order
 		 */
+		connect_to_db();
 		String custAddress = "";
 		String query = "SELECT * FROM delivery WHERE DeliveryOrderID = ?";
 		PreparedStatement pStmt = conn.prepareStatement(query);
@@ -503,6 +519,7 @@ public final class DBNinja {
 			e.printStackTrace();
 		}
 		pStmt.close();
+		conn.close();
 		return custAddress;
 	}
 
@@ -547,6 +564,7 @@ public final class DBNinja {
 	}
 
 	public static double[] getSPCPCrust(String size, String crust) throws SQLException, IOException {
+		// returns customer and business price at index 0 & 1
 		connect_to_db();
 		double[] price = new double[2];
 		String query = "SELECT BaseSP, BaseCP FROM base WHERE BaseSize = ? AND BaseCrust = ?";
@@ -685,13 +703,10 @@ public final class DBNinja {
 		String query = "SELECT * FROM ToppingPopularity ORDER BY Topping";
 		Statement stmt = conn.createStatement();
 		try (ResultSet rSet = stmt.executeQuery(query)) {
-			System.out.println("-----------------------");
-			System.out.println("Topping Popularity Report");
-			System.out.println("-----------------------");
-			while (rSet.next()) {
-				System.out.println("Topping=" + rSet.getString(1) + ", Count=" + rSet.getInt(2));
-			}
-			System.out.println("-----------------------");
+			System.out.println("-- TOPPING POPULARITY REPORT --");
+			System.out.printf("%-25s%-10s\n", "Topping", "Count");
+			while (rSet.next())
+				System.out.printf("%-25s%-10d\n", rSet.getString(1), rSet.getInt(2));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -712,17 +727,15 @@ public final class DBNinja {
 		String query = "SELECT * FROM ProfitByPizza";
 		Statement stmt = conn.createStatement();
 		try (ResultSet rSet = stmt.executeQuery(query)) {
-			System.out.println("-----------------------");
-			System.out.println("Profit By Pizza Report");
-			System.out.println("-----------------------");
+			System.out.println("-- PROFIT BY PIZZA REPORT --");
+			System.out.printf("%-10s%-20s%-20s%-10s\n", "Size", "Crust", "Date", "Profit");
 			while (rSet.next()) {
 				String size = rSet.getString(1);
 				String crust = rSet.getString(2);
 				String date = rSet.getString(3);
 				double profit = rSet.getDouble(4);
-				System.out.println("Size=" + size + ", Crust=" + crust + ", Date=" + date + ", Profit=" + profit);
+				System.out.printf("%-10s%-20s%-20s%-10.2f\n", size, crust, date, profit);
 			}
-			System.out.println("-----------------------");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -743,21 +756,17 @@ public final class DBNinja {
 		String query = "SELECT * FROM ProfitByOrderType";
 		Statement stmt = conn.createStatement();
 		try (ResultSet rSet = stmt.executeQuery(query)) {
-			System.out.println("-----------------------");
-			System.out.println("Profit By Order Type Report");
-			System.out.println("-----------------------");
+			System.out.println("-- PROFIT BY ORDER TYPE REPORT --");
+			System.out.printf("%-15s%-20s%-10s%-10s%-10s\n", "Type", "Month", "Price", "Cost", "Profit");
 			while (rSet.next()) {
 				String type = rSet.getString(1);
 				String month = rSet.getString(2);
 				double price = rSet.getDouble(3);
 				double cost = rSet.getDouble(4);
-				if (!type.isEmpty()) {
-					System.out.println("Type=" + type + ", Month=" + month + ", Price=" + price + ", Cost=" + cost);
-				} else {
-					System.out.println("Grand Total => Price=" + price + ", Cost=" + cost);
-				}
+				double profit = rSet.getDouble(5);
+				System.out.printf("%-15s%-20s%-10.2f%-10.2f%-10.2f\n", type, month, price, cost, profit);
+
 			}
-			System.out.println("-----------------------");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
