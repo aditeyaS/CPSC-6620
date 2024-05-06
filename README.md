@@ -1,22 +1,11 @@
-# Taylor's Pizzeria!
-Course Project for CPSC 6620 - Database Management System (DBMS)
+# CPSC 6620 - Database Management Systems
 
-## Structure
-part1 - contains the ERD
-part2 - contains SQL files to create and populate the DB
-part3 - Contains java JDBC front end to interact with the DB
+>**Semester: May, 2023 (Spring, 2023)**
 
+>Instructor: Connie Taylor
 
-## Structure of part3
-1. src/init - testing files
-2. src/cpsc4260 -project files files
+Introduction to database/data communications concepts as related to the design of online information systems. Problems involving structuring, creating, maintaining, and accessing multiple-user databases are presented and solutions developed. Comparison of several commercially available teleprocessing monitor and database management systems is made. Students are expected to have completed coursework in data structures before enrolling in this course.
 
+Languages: Java, SQL
 
-## Project Files
-1. src/cpsc4260/DBConnector.java - contains credentials to establish a connection to the database
-2. src/cpsc4260/Menu.java - menu-driven application to perform different operations
-3. src/cpsc4260/DBNinja.java - gets input from Menu.java and makes changes in the DB accordingly
-
-
-## Colaborators
-[Aditeya Srivastava](https://github.com/aditeyaS)
+Other Technologies: JDBC, Lucidcharts, MySQL Workbench
