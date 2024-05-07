@@ -1,6 +1,6 @@
 # CPSC 6620 - Database Management Systems
 
->**Semester: May, 2023 (Spring, 2023)**
+>**Semester: Jan, 2023 (Spring, 2023)**
 
 >Instructor: Connie Taylor
 
